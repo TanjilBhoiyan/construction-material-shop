@@ -3,20 +3,21 @@
 // ========================================================
 const { supabase, checkConnection } = require('./config/supabaseClient');
 const { fetchProducts, initProductForm } = require('./modules/inventory');
-const { initBillingModule } = require('./modules/billing'); 
+const { initBillingModule, populateBillingDropdown } = require('./modules/billing/index'); // 👈 ড্রপডাউন ফাংশনটি আনা হলো
 const { fetchDailyReports } = require('./modules/reports'); 
 const { fetchCustomers, initCustomerModule } = require('./modules/customers'); 
 
 window.supabase = supabase; 
 
-// অ্যাপের গ্লোবাল ফাংশনগুলোর বাইন্ডিং (ট্যাব স্যুইচিংয়ের সুবিধার জন্য)
+// অ্যাপের গ্লোবাল ফাংশনগুলোর বাইন্ডিং (ট্যাব স্যুইচিংয়ের সুবিধার জন্য)
 window.fetchProducts = fetchProducts;
 window.fetchDailyReports = fetchDailyReports;
 window.fetchCustomers = fetchCustomers;
+window.populateBillingDropdown = populateBillingDropdown; // 👈 গ্লোবাল বাইন্ডিং করা হলো
 
-// অ্যাপ চালু হওয়ার সাথে সাথে কানেকশন ও মডিউলগুলো ইনিশিয়েট হবে
+// অ্যাপ চালু হওয়ার সাথে সাথে কানেকশন ও মডিউলগুলো ইনিশিয়েট হবে
 checkConnection();
-fetchProducts();      // 👈 এটি রান হয়ে স্টক লিস্ট লোড করবে
+fetchProducts();      // 👈 এটি রান হয়ে স্টক লিস্ট লোড করবে
 initProductForm();    // 👈 এটি ফর্মের সাবমিট ও ড্রপডাউন হ্যান্ডেল করবে
 initBillingModule(); 
 initCustomerModule();
@@ -61,8 +62,9 @@ if (tabBillingBtn) {
         resetTabStyles();
         billingScreen.classList.remove('hidden');
         tabBillingBtn.className = "bg-blue-700 px-4 py-2 rounded font-semibold text-white";
-        if (typeof window.populateProductDropdown === 'function') {
-            window.populateProductDropdown();
+        // 🎯 এখানে নতুন মডিউলের সঠিক ড্রপডাউন ফাংশনটি কল করা হলো
+        if (typeof window.populateBillingDropdown === 'function') {
+            window.populateBillingDropdown();
         }
     });
 }

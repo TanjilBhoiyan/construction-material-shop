@@ -1,5 +1,4 @@
 const { supabase } = require('../config/supabaseClient');
-
 async function fetchDailyReports() {
     const reportSalesTbody = document.getElementById('report-sales-tbody');
     try {

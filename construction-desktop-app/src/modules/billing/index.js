@@ -1,0 +1,111 @@
+// ==========================================
+// 🚀 4. MAIN ENTRY POINT - MODULE INITIALIZER
+// ==========================================
+
+const { supabase } = require('../../config/supabaseClient');
+const { setGlobalProducts, handleAddToCart } = require('./cart');
+const { calculateBillSummary } = require('./calculations');
+const { handleCheckout } = require('./checkout');
+
+// 🔄 ডাটাবেজ থেকে বিলিং পেজের প্রোডাক্ট ড্রপডাউন লোড করা
+async function populateBillingDropdown() {
+    try {
+        const billProdSelect = document.getElementById('bill-prod-select');
+        const billProdRate = document.getElementById('bill-prod-rate');
+        
+        if (!billProdSelect) return;
+
+        let { data: products, error } = await supabase.from('products').select('*').order('name', { ascending: true });
+        if (error) throw error;
+        
+        setGlobalProducts(products);
+        window.cachedProducts = products; 
+        
+        billProdSelect.innerHTML = '';
+        
+        products.forEach(prod => {
+            const opt = document.createElement('option');
+            opt.value = prod.id;
+            opt.innerText = `${prod.name} (স্টক: ${prod.current_stock} ${prod.unit || ''})`;
+            billProdSelect.appendChild(opt);
+        });
+
+        if (products.length > 0) {
+            updateRateField(products[0].id);
+        }
+
+    } catch (err) {
+        console.error("Dropdown loading failed:", err.message);
+    }
+}
+
+// সিলেক্টেড প্রোডাক্ট অনুযায়ী রেট ফিল্ড আপডেট
+function updateRateField(productId) {
+    const billProdRate = document.getElementById('bill-prod-rate');
+    let globalProducts = window.cachedProducts || [];
+    const selectedProd = globalProducts.find(p => p.id == productId);
+    if (selectedProd && billProdRate) {
+        billProdRate.value = selectedProd.default_selling_price; 
+    }
+}
+
+// 🎯 নন-ব্লকিং অ্যাপ টোস্ট নোটিফিকেশন ফাংশন
+function showToast(message, isError = false) {
+    const oldToast = document.getElementById('app-toast');
+    if (oldToast) oldToast.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'app-toast';
+    toast.innerText = message;
+
+    if (isError) {
+        toast.className = 'fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white bg-red-600 z-50 font-semibold animate-shake';
+    } else {
+        toast.className = 'fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white bg-green-600 z-50 font-semibold';
+    }
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// বিলিং স্ক্রিন ইনিশিয়েট করার মেইন ফাংশন
+function initBillingModule() {
+    const billProdSelect = document.getElementById('bill-prod-select');
+    const addToCartBtn = document.getElementById('add-to-cart-btn');
+    const checkoutBillBtn = document.getElementById('checkout-bill-btn');
+    
+    const summaryExtraCost = document.getElementById('summary-extra-cost');
+    const summaryCostBearer = document.getElementById('summary-cost-bearer');
+    const summaryCashPaid = document.getElementById('summary-cash-paid');
+
+    populateBillingDropdown();
+
+    if (billProdSelect) {
+        billProdSelect.onchange = (e) => updateRateField(e.target.value);
+    }
+
+    // ❌ কোনো cloneNode(true) নাই, সরাসরি ওল্ড-স্কুল অন-ক্লিক সেফ বাইন্ডিং
+    if (addToCartBtn) {
+        addToCartBtn.onclick = function(e) {
+            e.preventDefault();
+            handleAddToCart();
+        };
+    }
+
+    if (summaryExtraCost) summaryExtraCost.oninput = calculateBillSummary;
+    if (summaryCostBearer) summaryCostBearer.onchange = calculateBillSummary;
+    if (summaryCashPaid) summaryCashPaid.oninput = calculateBillSummary;
+
+    // 💾 ইনভয়েস কনফার্ম বাটন
+    if (checkoutBillBtn) {
+        checkoutBillBtn.onclick = function(e) {
+            e.preventDefault();
+            handleCheckout(checkoutBillBtn);
+        };
+    }
+}
+
+module.exports = { initBillingModule, populateBillingDropdown, showToast };
