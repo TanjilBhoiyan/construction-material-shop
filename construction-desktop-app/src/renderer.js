@@ -2,7 +2,7 @@
 // 🏢 নেক্সট-লেভেল মডিউলার আর্কিটেকচার ইমপোর্টার্স (১০০% কমপ্লিট)
 // ========================================================
 const { supabase, checkConnection } = require('./config/supabaseClient');
-const { fetchProducts, initProductForm } = require('./modules/inventory');
+const { fetchProducts, initProductForm } = require('./modules/inventory/index');
 const { initBillingModule, populateBillingDropdown } = require('./modules/billing/index'); // 👈 ড্রপডাউন ফাংশনটি আনা হলো
 const { fetchDailyReports } = require('./modules/reports'); 
 const { fetchCustomers, initCustomerModule } = require('./modules/customers'); 

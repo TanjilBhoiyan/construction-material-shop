@@ -1,0 +1,66 @@
+// ========================================================
+// 📦 1. INVENTORY DATA FETCH & DOM RENDERING
+// ========================================================
+
+const { supabase } = require('../../config/supabaseClient');
+
+// গ্লোবাল ভ্যারিয়েবল ক্যাশ রাখার জন্য
+window.cachedProducts = [];
+
+async function fetchProducts() {
+    const productTbody = document.getElementById('product-tbody') || document.querySelector('tbody');
+    const productSelect = document.getElementById('product-select');
+    
+    try {
+        let { data: products, error } = await supabase
+            .from('products')
+            .select('*')
+            .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        window.cachedProducts = products || [];
+
+        // ১. টেবিল ভিউ আপডেট
+        if (productTbody) {
+            productTbody.innerHTML = '';
+            if (window.cachedProducts.length === 0) {
+                productTbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">কোনো প্রোডাক্ট পাওয়া যায়নি।</td></tr>`;
+            } else {
+                window.cachedProducts.forEach(prod => {
+                    const stockVal = prod.current_stock !== undefined ? prod.current_stock : 0;
+                    const buyingVal = prod.buying_price !== undefined ? prod.buying_price : 0;
+                    const sellingVal = prod.default_selling_price !== undefined ? prod.default_selling_price : 0;
+                    const unitVal = prod.unit || '';
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="px-4 py-2 border-b text-gray-800">${prod.name}</td>
+                        <td class="px-4 py-2 border-b text-blue-600 font-semibold">${stockVal} ${unitVal}</td>
+                        <td class="px-4 py-2 border-b text-gray-600">৳${parseFloat(buyingVal).toFixed(2)}</td>
+                        <td class="px-4 py-2 border-b text-green-600 font-medium">৳${parseFloat(sellingVal).toFixed(2)}</td>
+                    `;
+                    productTbody.appendChild(row);
+                });
+            }
+        }
+
+        // ২. ড্রপডাউন মেনু আপডেট
+        if (productSelect) {
+            productSelect.innerHTML = '<option value="">-- নতুন প্রোডাক্ট (নিচে নাম লিখুন) --</option>';
+            window.cachedProducts.forEach(prod => {
+                const stockVal = prod.current_stock !== undefined ? prod.current_stock : 0;
+                const unitVal = prod.unit || '';
+                const option = document.createElement('option');
+                option.value = prod.id;
+                option.text = `${prod.name} (স্টক: ${stockVal} ${unitVal})`;
+                productSelect.appendChild(option);
+            });
+        }
+
+    } catch (err) {
+        console.error("Product loading failed:", err.message);
+    }
+}
+
+module.exports = { fetchProducts };
