@@ -15,8 +15,11 @@ async function handleCheckout(checkoutBillBtn) {
         return;
     }
 
-    const customerName = document.getElementById('bill-cust-name').value.trim() || "Unknown Customer";
-    const customerPhone = document.getElementById('bill-cust-phone').value.trim() || "";
+    // ১. ডম থেকে নতুন ইনপুটগুলোর ভ্যালু নেওয়া
+    const customerName = document.getElementById('customer-name')?.value.trim() || "অনিবন্ধিত কাস্টমার";
+    const customerPhone = document.getElementById('customer-phone')?.value.trim() || "";
+    const fatherName = document.getElementById('customer-father')?.value.trim() || ""; // 👈 নতুন
+    const customerAddress = document.getElementById('customer-address')?.value.trim() || ""; // 👈 নতুন
     
     const summarySubtotal = document.getElementById('summary-subtotal');
     const summaryExtraCost = document.getElementById('summary-extra-cost');
@@ -98,6 +101,8 @@ async function handleCheckout(checkoutBillBtn) {
                 {
                     customer_name: customerName,
                     customer_phone: customerPhone,
+                    father_name: fatherName,
+                    customer_address: customerAddress,
                     subtotal: subtotal,
                     extra_cost: extraCost,
                     cost_bearer: bearer,

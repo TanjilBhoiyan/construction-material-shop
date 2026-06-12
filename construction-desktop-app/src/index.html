@@ -1,20 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aman Traders - Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100 font-sans">
 
     <nav class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
         <div class="flex items-center space-x-6">
             <h1 class="text-xl font-bold mr-4">AMAN TRADERS</h1>
-            <button id="tab-inventory-btn" class="bg-blue-700 px-4 py-2 rounded font-semibold text-white">📦 ইনভেন্টরি</button>
-            <button id="tab-billing-btn" class="hover:bg-blue-500 px-4 py-2 rounded font-semibold text-gray-200">🧾 নতুন বিল (বিক্রয়)</button>
-            <button id="tab-report-btn" class="hover:bg-blue-500 px-4 py-2 rounded font-semibold text-gray-200">📊 হিসাব ও রিপোর্ট</button>
-            <button id="tab-customer-btn" class="hover:bg-blue-500 px-4 py-2 rounded font-semibold text-gray-200">👥 কাস্টমার খতিয়ান</button>
+            <button id="tab-inventory-btn" class="bg-blue-700 px-4 py-2 rounded font-semibold text-white">📦
+                ইনভেন্টরি</button>
+            <button id="tab-billing-btn" class="hover:bg-blue-500 px-4 py-2 rounded font-semibold text-gray-200">🧾 নতুন
+                বিল (বিক্রয়)</button>
+            <button id="tab-report-btn" class="hover:bg-blue-500 px-4 py-2 rounded font-semibold text-gray-200">📊 হিসাব
+                ও রিপোর্ট</button>
+            <button id="tab-customer-btn" class="hover:bg-blue-500 px-4 py-2 rounded font-semibold text-gray-200">👥
+                কাস্টমার খতিয়ান</button>
         </div>
         <div id="db-status" class="text-sm bg-yellow-500 text-black px-3 py-1 rounded-full font-semibold animate-pulse">
             Connecting Cloud DB...
@@ -31,16 +37,19 @@
                         <label class="block text-gray-700 text-sm font-bold mb-2" for="product-select">
                             প্রোডাক্ট সিলেক্ট করুন (পুরাতন মালের স্টক বাড়াতে চাইলে):
                         </label>
-                        <select id="product-select" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                        <select id="product-select"
+                            class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
                             <option value="">-- নতুন প্রোডাক্ট (নতুন নাম লিখুন) --</option>
                         </select>
                     </div>
-                    <input type="text" id="prod-name" placeholder="যেমন: BSRM Rod 10mm" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500" required>
+                    <input type="text" id="prod-name" placeholder="যেমন: BSRM Rod 10mm"
+                        class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500" required>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">ইউনিট:</label>
-                        <select id="prod-unit" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500">
+                        <select id="prod-unit"
+                            class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500">
                             <option value="কেজি">কেজি (Kg)</option>
                             <option value="ব্যাগ">ব্যাগ (Bag)</option>
                             <option value="বান্ডিল">বান্ডিল (Bundle)</option>
@@ -48,20 +57,25 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">বর্তমান স্টক:</label>
-                        <input type="number" id="prod-stock" step="0.01" value="0" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500">
+                        <input type="number" id="prod-stock" step="0.01" value="0"
+                            class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500">
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700">কেনা দাম:</label>
-                        <input type="number" id="prod-buying" step="0.01" placeholder="0.00" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500" required>
+                        <input type="number" id="prod-buying" step="0.01" placeholder="0.00"
+                            class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500" required>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">বিক্রয় দাম:</label>
-                        <input type="number" id="prod-selling" step="0.01" placeholder="0.00" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500" required>
+                        <input type="number" id="prod-selling" step="0.01" placeholder="0.00"
+                            class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500" required>
                     </div>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">💾 ডাটাবেজে সেভ করুন</button>
+                <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">💾
+                    ডাটাবেজে সেভ করুন</button>
             </form>
         </div>
 
@@ -86,32 +100,50 @@
     <div id="billing-screen" class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 hidden">
         <div class="bg-white p-6 rounded-lg shadow-md md:col-span-2 space-y-6">
             <h2 class="text-xl font-bold text-blue-600 border-b pb-2">🧾 কাস্টমার ও মালের বিবরণ</h2>
-            
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700">কাস্টমারের নাম:</label>
-                    <input type="text" id="bill-cust-name" placeholder="যেমন: মো: রহিম" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border border-gray-300">
+                    <input type="text" id="bill-cust-name" placeholder="যেমন: মো: রহিম"
+                        class="mt-1 block w-full rounded-md p-2 bg-gray-50 border border-gray-300">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">মোবাইল নাম্বার:</label>
-                    <input type="text" id="bill-cust-phone" placeholder="017xxxxxxxx" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border border-gray-300">
+                    <input type="text" id="bill-cust-phone" placeholder="017xxxxxxxx"
+                        class="mt-1 block w-full rounded-md p-2 bg-gray-50 border border-gray-300">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">বাবার নাম (Father's Name):</label>
+                    <input type="text" id="customer-father" class="w-full border rounded px-3 py-2"
+                        placeholder="বাবার নাম লিখুন">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ঠিকানা (Address):</label>
+                    <input type="text" id="customer-address" class="w-full border rounded px-3 py-2"
+                        placeholder="গ্রাম, থানা, জেলা">
                 </div>
             </div>
 
-            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+            <div
+                class="bg-blue-50 p-4 rounded-lg border border-blue-200 grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
                 <div class="md:col-span-1">
                     <label class="block text-sm font-medium text-gray-700">প্রোডাক্ট বাছুন:</label>
-                    <select id="bill-prod-select" class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300"></select>
+                    <select id="bill-prod-select"
+                        class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300"></select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">পরিমাণ (Qty):</label>
-                    <input type="number" id="bill-prod-qty" step="0.01" value="1" class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300">
+                    <input type="number" id="bill-prod-qty" step="0.01" value="1"
+                        class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700">রেট (৳ প্রতি ইউনিট):</label>
-                    <input type="number" id="bill-prod-rate" step="0.01" class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300">
+                    <input type="number" id="bill-prod-rate" step="0.01"
+                        class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300">
                 </div>
-                <button type="button" id="add-to-cart-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">➕ যোগ করুন</button>
+                <button type="button" id="add-to-cart-btn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full">➕ যোগ
+                    করুন</button>
             </div>
 
             <div class="overflow-x-auto">
@@ -126,14 +158,14 @@
                         </tr>
                     </thead>
                     <tbody id="cart-tbody">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
 
         <div class="bg-gray-50 p-6 rounded-lg shadow-md border border-gray-200 h-fit space-y-4">
             <h2 class="text-xl font-bold text-gray-800 border-b pb-2">💰 বিলের হিসাব</h2>
-            
+
             <div class="flex justify-between text-lg">
                 <span>মালের মোট দাম:</span>
                 <span class="font-bold">৳<span id="summary-subtotal">0.00</span></span>
@@ -143,12 +175,14 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">অতিরিক্ত খরচ (লেবার/গাড়ি ভাড়া):</label>
-                <input type="number" id="summary-extra-cost" value="0" class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300">
+                <input type="number" id="summary-extra-cost" value="0"
+                    class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300">
             </div>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700">এই খরচটি কে বহন করবে?</label>
-                <select id="summary-cost-bearer" class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300">
+                <select id="summary-cost-bearer"
+                    class="mt-1 block w-full rounded-md p-2 bg-white border border-gray-300">
                     <option value="none">কেউ না (০)</option>
                     <option value="customer">কাস্টমার দেবে (বিলের সাথে যোগ হবে)</option>
                     <option value="shop">দোকান দেবে (বিল ক্যাশ থেকে কমবে)</option>
@@ -164,7 +198,8 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-800 font-bold">আজ নগদ জমা (Cash Paid):</label>
-                <input type="number" id="summary-cash-paid" value="0" class="mt-1 block w-full rounded-md p-2 bg-yellow-50 border-2 border-yellow-400 text-lg font-bold">
+                <input type="number" id="summary-cash-paid" value="0"
+                    class="mt-1 block w-full rounded-md p-2 bg-yellow-50 border-2 border-yellow-400 text-lg font-bold">
             </div>
 
             <div class="flex justify-between text-lg text-red-600 font-semibold bg-red-50 p-2 rounded">
@@ -172,7 +207,8 @@
                 <span>৳<span id="summary-calculated-due">0.00</span></span>
             </div>
 
-            <button type="button" id="checkout-bill-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-3 px-4 rounded text-lg shadow-md transition">
+            <button type="button" id="checkout-bill-btn"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-black py-3 px-4 rounded text-lg shadow-md transition">
                 💾 ইনভয়েস কনফার্ম ও প্রিন্ট
             </button>
         </div>
@@ -180,7 +216,7 @@
     <!-- ================= TAB 3: REPORT SCREEN (Hidden by default) ================= -->
     <div id="report-screen" class="p-6 space-y-6 hidden">
         <h2 class="text-xl font-bold text-blue-600 border-b pb-2">📊 দৈনিক বেচাকেনা ও লাভ-ক্ষতির হিসাব</h2>
-        
+
         <!-- রিপোর্ট কার্ডসমূহ -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div class="bg-blue-500 text-white p-4 rounded-lg shadow-md">
@@ -246,32 +282,53 @@
                     <tbody id="customer-tbody" class="divide-y divide-gray-200">
                         <!-- ডাটাবেজ থেকে কাস্টমার লিস্ট এখানে লোড হবে -->
                     </tbody>
+                    <div class="flex justify-between items-center mt-4 bg-white p-4 rounded-lg shadow">
+                        <button id="customer-prev-btn"
+                            class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                            ⬅️ আগের পেজ
+                        </button>
+                        <span id="customer-page-info" class="font-semibold text-gray-700">
+                            পেজ: ১
+                        </span>
+                        <button id="customer-next-btn"
+                            class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed">
+                            পরের পেজ ➡️
+                        </button>
+                    </div>
                 </table>
             </div>
         </div>
     </div>
     <script src="renderer.js"></script>
-<!-- 💵 টাকা জমা নেওয়ার পপআপ মডাল -->
-<div id="payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 shadow-xl w-96">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">💵 বকেয়া টাকা জমা নিন</h3>
-        
-        <input type="hidden" id="modal-cust-id">
-        <div class="mb-3">
-            <p class="text-sm text-gray-600">কাস্টমারের নাম: <span id="modal-cust-name" class="font-bold text-gray-800"></span></p>
-            <p class="text-sm text-gray-600">বর্তমান বকেয়া: <span id="modal-cust-due" class="font-bold text-red-600"></span></p>
-        </div>
+    <!-- 💵 টাকা জমা নেওয়ার পপআপ মডাল -->
+    <div id="payment-modal"
+        class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-96">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">💵 বকেয়া টাকা জমা নিন</h3>
 
-        <div class="mb-4">
-            <label class="block text-sm font-semibold text-gray-700 mb-1">জমার পরিমাণ (৳):</label>
-            <input type="number" id="modal-pay-amount" placeholder="কত টাকা জমা নিলেন?" class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500">
-        </div>
+            <input type="hidden" id="modal-cust-id">
+            <div class="mb-3">
+                <p class="text-sm text-gray-600">কাস্টমারের নাম: <span id="modal-cust-name"
+                        class="font-bold text-gray-800"></span></p>
+                <p class="text-sm text-gray-600">বর্তমান বকেয়া: <span id="modal-cust-due"
+                        class="font-bold text-red-600"></span></p>
+            </div>
 
-        <div class="flex justify-end gap-2">
-            <button id="close-modal-btn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded font-medium">বাতিল</button>
-            <button id="submit-payment-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold">জমা নিশ্চিত করুন</button>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">জমার পরিমাণ (৳):</label>
+                <input type="number" id="modal-pay-amount" placeholder="কত টাকা জমা নিলেন?"
+                    class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <button id="close-modal-btn"
+                    class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded font-medium">বাতিল</button>
+                <button id="submit-payment-btn"
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold">জমা নিশ্চিত
+                    করুন</button>
+            </div>
         </div>
     </div>
-</div>
 </body>
+
 </html>

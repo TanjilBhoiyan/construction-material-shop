@@ -1,30 +1,55 @@
 const { supabase } = require('../config/supabaseClient');
 
+// 📌 পেজিনেশন ট্র্যাকিং ভ্যারিয়েবলস
+let currentCustomerPage = 1;
+const itemsPerPage = 20;
+
 async function fetchCustomers() {
     const customerTbody = document.getElementById('customer-tbody');
+    const pageInfo = document.getElementById('customer-page-info'); // 👈 পেজ নম্বর দেখানোর জন্য
+
     try {
         if (!customerTbody) return;
         
+        // ১. টোটাল মার্কেট বকেয়া (Total Market Due) লাইভ ক্যালকুলেশন
+        // যেহেতু আমরা range() দিয়ে ডাটা কাটব, তাই পুরো ডাটাবেজের বকেয়া সামারি আলাদাভাবে টেনে আনা হলো
+        const { data: dueSummary, error: sumError } = await supabase
+            .from('customers')
+            .select('total_due');
+        
+        let totalMarketDue = 0;
+        if (!sumError && dueSummary) {
+            totalMarketDue = dueSummary.reduce((sum, item) => sum + (item.total_due || 0), 0);
+        }
+
+        // ২. পেজিনেশনের জন্য রেঞ্জ বা লিমিট হিসাব করা (0-based index)
+        const from = (currentCustomerPage - 1) * itemsPerPage;
+        const to = from + itemsPerPage - 1;
+
+        // ৩. সুপাবেজ থেকে ২০টি ডাটা Descending অর্ডারে নিয়ে আসা
+        // 'created_at' কলাম অনুযায়ী করা হলো, যাতে একদম নতুন কাস্টমার বা এন্ট্রি সবার উপরে আসে
         let { data: customers, error } = await supabase
             .from('customers')
             .select('*')
-            .order('name', { ascending: true });
+            .order('created_at', { ascending: false }) // 👈 নতুন ডাটা সবার উপরে (Descending)
+            .range(from, to);                          // 👈 একবারে মাত্র ২০টা ডাটা লিমিট
 
         if (error) throw error;
 
         customerTbody.innerHTML = '';
-        let totalMarketDue = 0;
 
         if (!customers || customers.length === 0) {
             customerTbody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-gray-500">কোনো কাস্টমার ডাটা পাওয়া যায়নি।</td></tr>`;
-            if(document.getElementById('total-market-due')) document.getElementById('total-market-due').innerText = "0.00";
+            const marketDueElem = document.getElementById('total-market-due');
+            if (marketDueElem) marketDueElem.innerText = totalMarketDue.toFixed(2);
+            setupPaginationButtons(false);
             return;
         }
 
         window.cachedCustomers = customers;
 
+        // ৪. কাস্টমার ডাটা টেবিলে রেন্ডার করা (আপনার ওরিজিনাল লজিক)
         customers.forEach(cust => {
-            totalMarketDue += cust.total_due;
             const row = document.createElement('tr');
             const dueColor = cust.total_due > 0 ? 'text-red-600 font-bold' : 'text-gray-500';
 
@@ -39,15 +64,31 @@ async function fetchCustomers() {
             customerTbody.appendChild(row);
         });
 
+        // মোট বাজার বকেয়া স্ক্রিনে আপডেট
         const marketDueElem = document.getElementById('total-market-due');
         if (marketDueElem) marketDueElem.innerText = totalMarketDue.toFixed(2);
+
+        // ৫. পেজ ইনফো এবং বাটনের স্ট্যাটাস সিঙ্ক করা
+        if (pageInfo) pageInfo.innerText = `পেজ: ${currentCustomerPage}`;
+        
+        // কাস্টমার সংখ্যা ঠিক ২০টা হলে পরের পেজে আরও ডাটা থাকতে পারে, তাই বাটন কন্ডিশন সেট করা
+        setupPaginationButtons(customers.length === itemsPerPage);
 
     } catch (err) {
         console.error("Customer ledger loading failed:", err.message);
     }
 }
 
-// গ্লোবাল ফাংশন ও ইভেন্ট লিসেনারগুলো মডিউল চালুর সময় বাইন্ড হবে
+// 🛠️ পেজিনেশন বাটন এনেবল/ডিসেবল করার হেল্পার ফাংশন
+function setupPaginationButtons(hasNextPage) {
+    const prevBtn = document.getElementById('customer-prev-btn');
+    const nextBtn = document.getElementById('customer-next-btn');
+
+    if (prevBtn) prevBtn.disabled = currentCustomerPage === 1; // ১ম পেজে থাকলে আগের পেজ বাটন অফ
+    if (nextBtn) nextBtn.disabled = !hasNextPage;             // পরের পেজে ডাটা না থাকলে নেক্সট বাটন অফ
+}
+
+// গলোবাল ফাংশন ও ইভেন্ট লিসেনারগুলো মডিউল চালুর সময় বাইন্ড হবে
 function initCustomerModule() {
     window.triggerPaymentModal = function(id) {
         if(!window.cachedCustomers) return;
@@ -73,7 +114,29 @@ function initCustomerModule() {
         paymentModal.classList.remove('hidden');
     }
 
-    // মডাল ক্লোজ ও সাবমিট বাটন লিসেনার (একবারই লিসেনার সেট করার সেফ প্র্যাকটিস)
+    // 🛠️ পেজিনেশন বাটনগুলোর ক্লিক ইভেন্ট লিসেনার বাইন্ডিং (ডুপ্লিকেট এভয়েড ট্রিক)
+    const prevBtn = document.getElementById('customer-prev-btn');
+    const nextBtn = document.getElementById('customer-next-btn');
+
+    if (prevBtn && !prevBtn.dataset.listenerAttached) {
+        prevBtn.addEventListener('click', async () => {
+            if (currentCustomerPage > 1) {
+                currentCustomerPage--;
+                await fetchCustomers();
+            }
+        });
+        prevBtn.dataset.listenerAttached = "true";
+    }
+
+    if (nextBtn && !nextBtn.dataset.listenerAttached) {
+        nextBtn.addEventListener('click', async () => {
+            currentCustomerPage++;
+            await fetchCustomers();
+        });
+        nextBtn.dataset.listenerAttached = "true";
+    }
+
+    // มডাল ক্লোজ ও সাবমিট বাটন লিসেনার (আপনার ওরিজিনাল গ্লোবাল লিসেনার)
     if (!window.customerListenersSet) {
         document.addEventListener('click', async function(e) {
             if(e.target && e.target.id === 'close-modal-btn') {
@@ -96,7 +159,7 @@ function initCustomerModule() {
                     return;
                 }
                 if (payAmount > currentDue) {
-                    alert(`সতর্কতা: কাস্টমারের বকেয়া ৳${currentDue.toFixed(2)}, আপনি বকেয়ার চেয়ে বেশি টাকা জমা নিতে পারবেন না!`);
+                    alert(`সতর্কতা: কাস্টমারের বকেয়া ৳${currentDue.toFixed(2)}, আপনি বকেয়ার চেয়ে বেশি টাকা জমা নিতে পারবেন না!`);
                     return;
                 }
 
