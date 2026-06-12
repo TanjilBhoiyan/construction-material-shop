@@ -118,15 +118,16 @@ async function handleCheckout(checkoutBillBtn) {
 
                 if (custUpdateErr) throw custUpdateErr;
             } else {
-                // 🟢 সম্পূর্ণ নতুন কাস্টমার: ফ্রেশ প্রোফাইল তৈরি হবে (বাবার নাম ও ঠিকানাসহ)
+                // 🟢 সম্পূর্ণ নতুন কাস্টমার: ফ্রেশ প্রোফাইল তৈরি হবে
                 let { error: custInsertErr } = await supabase
                     .from('customers')
                     .insert([{ 
                         name: customerName, 
-                        phone: customerPhone, 
-                        father_name: fatherName, 
-                        customer_address: customerAddress, 
-                        total_due: due 
+                        // 👇 খালি স্ট্রিং হলে কঠোরভাবে null পাঠানো নিশ্চিত করা হলো
+                        phone: customerPhone === "" ? null : customerPhone, 
+                        father_name: fatherName === "" ? null : fatherName, 
+                        customer_address: customerAddress === "" ? null : customerAddress, 
+                        total_due: Number(due) 
                     }]);
 
                 if (custInsertErr) throw custInsertErr;
