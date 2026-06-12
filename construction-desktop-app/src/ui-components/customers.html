@@ -1,0 +1,49 @@
+<div id="customer-screen" class="p-6 space-y-6">
+    <div class="flex justify-between items-center border-b pb-2">
+        <h2 class="text-xl font-bold text-blue-600">👥 কাস্টমার তালিকা ও বকেয়া খতিয়ান</h2>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded shadow-sm font-semibold">
+            দোকানের সর্বমোট পাওনা (বাজার বাকি): ৳<span id="total-market-due">0.00</span>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-bold text-gray-600">কাস্টমারের নাম</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-600">মোবাইল নাম্বার</th>
+                        <th class="px-4 py-3 text-left font-bold text-gray-600">সর্বমোট বকেয়া (Total Due)</th>
+                        <th class="px-4 py-3 text-center font-bold text-gray-600">অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody id="customer-tbody" class="divide-y divide-gray-200"></tbody>
+            </table>
+            
+            <div class="flex justify-between items-center mt-4 bg-white p-4">
+                <button id="customer-prev-btn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed">⬅️ আগের পেজ</button>
+                <span id="customer-page-info" class="font-semibold text-gray-700">পেজ: ১</span>
+                <button id="customer-next-btn" class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed">পরের পেজ ➡️</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="payment-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 shadow-xl w-96">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">💵 বকেয়া টাকা জমা নিন</h3>
+        <input type="hidden" id="modal-cust-id">
+        <div class="mb-3">
+            <p class="text-sm text-gray-600">কাস্টমারের নাম: <span id="modal-cust-name" class="font-bold text-gray-800"></span></p>
+            <p class="text-sm text-gray-600">বর্তমান বকেয়া: <span id="modal-cust-due" class="font-bold text-red-600"></span></p>
+        </div>
+        <div class="mb-4">
+            <label class="block text-sm font-semibold text-gray-700 mb-1">জমার পরিমাণ (৳):</label>
+            <input type="number" id="modal-pay-amount" placeholder="কত টাকা জমা নিলেন?" class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-green-500">
+        </div>
+        <div class="flex justify-end gap-2">
+            <button id="close-modal-btn" class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded font-medium">বাতিল</button>
+            <button id="submit-payment-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-semibold">জমা নিশ্চিত করুন</button>
+        </div>
+    </div>
+</div>

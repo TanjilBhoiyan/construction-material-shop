@@ -1,0 +1,39 @@
+<div id="report-screen" class="p-6 space-y-6">
+    <h2 class="text-xl font-bold text-blue-600 border-b pb-2">📊 দৈনিক বেচাকেনা ও লাভ-ক্ষতির হিসাব</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-blue-500 text-white p-4 rounded-lg shadow-md">
+            <p class="text-sm font-medium">আজকের মোট বিক্রি (Total Sales)</p>
+            <p class="text-2xl font-black">৳<span id="rep-total-sales">0.00</span></p>
+        </div>
+        <div class="bg-green-500 text-white p-4 rounded-lg shadow-md">
+            <p class="text-sm font-medium">আজকের নগদ আদায় (Cash Received)</p>
+            <p class="text-2xl font-black">৳<span id="rep-cash-received">0.00</span></p>
+        </div>
+        <div class="bg-red-500 text-white p-4 rounded-lg shadow-md">
+            <p class="text-sm font-medium">আজকের মোট বাকি (Total Due)</p>
+            <p class="text-2xl font-black">৳<span id="rep-total-due">0.00</span></p>
+        </div>
+        <div class="bg-purple-600 text-white p-4 rounded-lg shadow-md animate-pulse">
+            <p class="text-sm font-medium">আজকের আনুমানিক লাভ (Net Profit)</p>
+            <p class="text-2xl font-black">৳<span id="rep-net-profit">0.00</span></p>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h3 class="text-lg font-bold text-gray-700 mb-4">📝 আজকের মেমোসমূহের তালিকা</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-2 text-left">তারিখ ও সময়</th>
+                        <th class="px-4 py-2 text-left">মোট বিল</th>
+                        <th class="px-4 py-2 text-left">নগদ জমা</th>
+                        <th class="px-4 py-2 text-left">বাকি</th>
+                    </tr>
+                </thead>
+                <tbody id="report-sales-tbody" class="divide-y divide-gray-200"></tbody>
+            </table>
+        </div>
+    </div>
+</div>

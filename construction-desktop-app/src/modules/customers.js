@@ -10,13 +10,13 @@ async function fetchCustomers() {
 
     try {
         if (!customerTbody) return;
-        
+
         // ১. টোটাল মার্কেট বকেয়া (Total Market Due) লাইভ ক্যালকুলেশন
         // যেহেতু আমরা range() দিয়ে ডাটা কাটব, তাই পুরো ডাটাবেজের বকেয়া সামারি আলাদাভাবে টেনে আনা হলো
         const { data: dueSummary, error: sumError } = await supabase
             .from('customers')
             .select('total_due');
-        
+
         let totalMarketDue = 0;
         if (!sumError && dueSummary) {
             totalMarketDue = dueSummary.reduce((sum, item) => sum + (item.total_due || 0), 0);
@@ -70,7 +70,7 @@ async function fetchCustomers() {
 
         // ৫. পেজ ইনফো এবং বাটনের স্ট্যাটাস সিঙ্ক করা
         if (pageInfo) pageInfo.innerText = `পেজ: ${currentCustomerPage}`;
-        
+
         // কাস্টমার সংখ্যা ঠিক ২০টা হলে পরের পেজে আরও ডাটা থাকতে পারে, তাই বাটন কন্ডিশন সেট করা
         setupPaginationButtons(customers.length === itemsPerPage);
 
@@ -90,15 +90,15 @@ function setupPaginationButtons(hasNextPage) {
 
 // গলোবাল ফাংশন ও ইভেন্ট লিসেনারগুলো মডিউল চালুর সময় বাইন্ড হবে
 function initCustomerModule() {
-    window.triggerPaymentModal = function(id) {
-        if(!window.cachedCustomers) return;
+    window.triggerPaymentModal = function (id) {
+        if (!window.cachedCustomers) return;
         const cust = window.cachedCustomers.find(c => c.id === id);
-        if(cust) {
+        if (cust) {
             window.openPaymentModal(cust.id, cust.name, cust.total_due);
         }
     }
 
-    window.openPaymentModal = function(id, name, totalDue) {
+    window.openPaymentModal = function (id, name, totalDue) {
         const paymentModal = document.getElementById('payment-modal');
         const modalCustId = document.getElementById('modal-cust-id');
         const modalCustName = document.getElementById('modal-cust-name');
@@ -106,11 +106,11 @@ function initCustomerModule() {
         const modalPayAmount = document.getElementById('modal-pay-amount');
 
         if (!paymentModal) return;
-        
+
         modalCustId.value = id;
         modalCustName.innerText = name;
         modalCustDue.innerText = `৳${parseFloat(totalDue).toFixed(2)}`;
-        modalPayAmount.value = ''; 
+        modalPayAmount.value = '';
         paymentModal.classList.remove('hidden');
     }
 
@@ -138,13 +138,13 @@ function initCustomerModule() {
 
     // มডাল ক্লোজ ও সাবমিট বাটন লিসেনার (আপনার ওরিজিনাল গ্লোবাল লিসেনার)
     if (!window.customerListenersSet) {
-        document.addEventListener('click', async function(e) {
-            if(e.target && e.target.id === 'close-modal-btn') {
+        document.addEventListener('click', async function (e) {
+            if (e.target && e.target.id === 'close-modal-btn') {
                 const paymentModal = document.getElementById('payment-modal');
-                if(paymentModal) paymentModal.classList.add('hidden');
+                if (paymentModal) paymentModal.classList.add('hidden');
             }
 
-            if(e.target && e.target.id === 'submit-payment-btn') {
+            if (e.target && e.target.id === 'submit-payment-btn') {
                 const modalCustId = document.getElementById('modal-cust-id');
                 const modalCustDue = document.getElementById('modal-cust-due');
                 const modalPayAmount = document.getElementById('modal-pay-amount');
@@ -154,37 +154,81 @@ function initCustomerModule() {
                 const payAmount = parseFloat(modalPayAmount.value) || 0;
                 const currentDue = parseFloat(modalCustDue.innerText.replace('৳', '')) || 0;
 
+                // Toast helper
+                const showToast = (message, isError = false) => {
+                    const oldToast = document.getElementById('app-toast');
+                    if (oldToast) oldToast.remove();
+
+                    const toast = document.createElement('div');
+                    toast.id = 'app-toast';
+                    toast.innerText = message;
+
+                    toast.className = `fixed bottom-5 right-5 px-6 py-3 rounded-lg shadow-lg text-white font-medium z-50 ${isError ? 'bg-red-600' : 'bg-green-600'
+                        }`;
+
+                    document.body.appendChild(toast);
+
+                    setTimeout(() => {
+                        toast.style.opacity = '0';
+                        setTimeout(() => toast.remove(), 300);
+                    }, 3000);
+                };
+
                 if (payAmount <= 0) {
-                    alert("দয়া করে সঠিক জমার পরিমাণ লিখুন।");
+                    showToast("দয়া করে সঠিক জমার পরিমাণ লিখুন।", true);
                     return;
                 }
+
                 if (payAmount > currentDue) {
-                    alert(`সতর্কতা: কাস্টমারের বকেয়া ৳${currentDue.toFixed(2)}, আপনি বকেয়ার চেয়ে বেশি টাকা জমা নিতে পারবেন না!`);
+                    showToast(
+                        `বকেয়ার চেয়ে বেশি টাকা জমা নেওয়া যাবে না। বর্তমান বকেয়া: ৳${currentDue.toFixed(2)}`,
+                        true
+                    );
                     return;
                 }
 
                 try {
                     const { error: paymentErr } = await supabase
                         .from('customer_payments')
-                        .insert([{ customer_id: custId, amount_paid: payAmount }]);
+                        .insert([{
+                            customer_id: custId,
+                            amount_paid: payAmount
+                        }]);
 
                     if (paymentErr) throw paymentErr;
 
                     const updatedDue = currentDue - payAmount;
+
                     const { error: custUpdateErr } = await supabase
                         .from('customers')
-                        .update({ total_due: updatedDue })
+                        .update({
+                            total_due: updatedDue
+                        })
                         .eq('id', custId);
 
                     if (custUpdateErr) throw custUpdateErr;
 
-                    alert(`🎉 ৳${payAmount} সফলভাবে জমা নেওয়া হয়েছে!\nবর্তমান বকেয়া: ৳${updatedDue.toFixed(2)}`);
-                    
-                    if(paymentModal) paymentModal.classList.add('hidden');
-                    fetchCustomers(); 
+                    showToast(
+                        `🎉 ৳${payAmount.toFixed(2)} সফলভাবে জমা নেওয়া হয়েছে!`
+                    );
+
+                    if (paymentModal) {
+                        paymentModal.classList.add('hidden');
+                    }
+
+                    await fetchCustomers();
+
+                    // Electron focus restore
+                    setTimeout(() => {
+                        window.focus();
+                        document.body.focus();
+                    }, 50);
 
                 } catch (err) {
-                    alert("টাকা জমা নিতে সমস্যা হয়েছে: " + err.message);
+                    showToast(
+                        "টাকা জমা নিতে সমস্যা হয়েছে: " + err.message,
+                        true
+                    );
                 }
             }
         });
