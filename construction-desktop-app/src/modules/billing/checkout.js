@@ -15,9 +15,9 @@ async function handleCheckout(checkoutBillBtn) {
         return;
     }
 
-    // ১. ডম থেকে নতুন ইনপুটগুলোর ভ্যালু নেওয়া
-    const customerName = document.getElementById('customer-name')?.value.trim() || "অনিবন্ধিত কাস্টমার";
-    const customerPhone = document.getElementById('customer-phone')?.value.trim() || "";
+    // ১. ডম থেকে নতুন ইনপুটগুলোর ভ্যালু নেওয়া (HTML ID Mismatch ফিক্স করা হয়েছে)
+    const customerName = document.getElementById('bill-cust-name')?.value.trim() || "অনিবন্ধিত কাস্টমার";
+    const customerPhone = document.getElementById('bill-cust-phone')?.value.trim() || "";
     const fatherName = document.getElementById('customer-father')?.value.trim() || ""; // 👈 নতুন
     const customerAddress = document.getElementById('customer-address')?.value.trim() || ""; // 👈 নতুন
     
@@ -55,6 +55,13 @@ async function handleCheckout(checkoutBillBtn) {
 
             if (currentProd.current_stock < item.quantity) {
                 showToast(`দুঃখিত! ${item.name}-এর পর্যাপ্ত স্টক নেই। বর্তমান স্টক: ${currentProd.current_stock}`, true);
+                
+                // স্টক না থাকলে বাটন আনলক করে ফিরে যাওয়া
+                if (checkoutBillBtn) {
+                    checkoutBillBtn.disabled = false;
+                    checkoutBillBtn.innerHTML = "💾 ইনভয়েস কনফার্ম ও প্রিন্ট";
+                    checkoutBillBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
                 return;
             }
 
@@ -67,28 +74,60 @@ async function handleCheckout(checkoutBillBtn) {
             if (updateErr) throw updateErr;
         }
 
-        // ২. কাস্টমার লেজার সিঙ্ক লজিক
-        if (customerPhone !== "") {
-            let { data: existingCustomer, error: custFetchErr } = await supabase
-                .from('customers')
-                .select('*')
-                .eq('phone', customerPhone)
-                .maybeSingle();
+        // ==========================================================
+        // ২. কাস্টমার লেজার সিঙ্ক লজিক (মোবাইল নাম্বার থাক বা না থাক)
+        // ==========================================================
+        if (customerName !== "অনিবন্ধিত কাস্টমার" && customerName !== "") {
+            let existingCustomer = null;
+            let custFetchErr = null;
+
+            if (customerPhone !== "") {
+                // ক) ফোন নাম্বার থাকলে ফোন নাম্বার দিয়ে কাস্টমার খুঁজবো
+                let { data: resData, error: err } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .eq('phone', customerPhone)
+                    .maybeSingle();
+                existingCustomer = resData;
+                custFetchErr = err;
+            } else {
+                // খ) ফোন নাম্বার না থাকলে শুধু নাম দিয়ে ডাটাবেজে কাস্টমার খুঁজবো
+                let { data: resData, error: err } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .eq('name', customerName)
+                    .maybeSingle();
+                existingCustomer = resData;
+                custFetchErr = err;
+            }
 
             if (custFetchErr) throw custFetchErr;
 
             if (existingCustomer) {
+                // 🟡 পুরাতন কাস্টমার: রানিং বকেয়া যোগ হবে, বাবার নাম ও ঠিকানা আপডেট হবে
                 const newTotalDue = existingCustomer.total_due + due;
                 let { error: custUpdateErr } = await supabase
                     .from('customers')
-                    .update({ total_due: newTotalDue, name: customerName }) 
+                    .update({ 
+                        total_due: newTotalDue, 
+                        name: customerName,
+                        father_name: fatherName || existingCustomer.father_name,
+                        customer_address: customerAddress || existingCustomer.customer_address
+                    }) 
                     .eq('id', existingCustomer.id);
 
                 if (custUpdateErr) throw custUpdateErr;
             } else {
+                // 🟢 সম্পূর্ণ নতুন কাস্টমার: ফ্রেশ প্রোফাইল তৈরি হবে (বাবার নাম ও ঠিকানাসহ)
                 let { error: custInsertErr } = await supabase
                     .from('customers')
-                    .insert([{ name: customerName, phone: customerPhone, total_due: due }]);
+                    .insert([{ 
+                        name: customerName, 
+                        phone: customerPhone, 
+                        father_name: fatherName, 
+                        customer_address: customerAddress, 
+                        total_due: due 
+                    }]);
 
                 if (custInsertErr) throw custInsertErr;
             }
@@ -123,6 +162,8 @@ async function handleCheckout(checkoutBillBtn) {
         
         if(document.getElementById('bill-cust-name')) document.getElementById('bill-cust-name').value = '';
         if(document.getElementById('bill-cust-phone')) document.getElementById('bill-cust-phone').value = '';
+        if(document.getElementById('customer-father')) document.getElementById('customer-father').value = ''; // 👈 রিসেট
+        if(document.getElementById('customer-address')) document.getElementById('customer-address').value = ''; // 👈 রিসেট
         if(summaryExtraCost) summaryExtraCost.value = 0;
         if(summaryCostBearer) summaryCostBearer.value = 'none';
         if(summaryCashPaid) summaryCashPaid.value = 0;
@@ -133,7 +174,7 @@ async function handleCheckout(checkoutBillBtn) {
         if (typeof window.fetchProducts === 'function') window.fetchProducts();
         populateBillingDropdown();
 
-        // 🎯 মাউস লক খোলার চূড়ান্ত ট্রিক
+        // 🎯 মাউস লক খোলার চূড়ান্ত ট্রিক
         setTimeout(() => {
             window.focus();
             const nameInput = document.getElementById('bill-cust-name');
