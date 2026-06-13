@@ -7,8 +7,8 @@ const path = require('path');
 const { supabase, checkConnection } = require('./config/supabaseClient');
 const { fetchProducts, initProductForm } = require('./modules/inventory/index');
 const { initBillingModule, populateBillingDropdown } = require('./modules/billing/index'); 
-const { fetchDailyReports } = require('./modules/reports'); 
-const { fetchCustomers, initCustomerModule } = require('./modules/customers'); 
+const { fetchDailyReports } = require('./modules/reports');  
+const { fetchCustomers, initCustomerModule } = require('./modules/customers/index');
 
 window.supabase = supabase; 
 
