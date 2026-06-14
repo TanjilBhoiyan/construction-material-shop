@@ -32,7 +32,7 @@
     9.
     10.
 # Customer Khotiyan (কাস্টমার খতিয়ান)- kaj baki ase
-    1.
+    1.Customer kokhon koto tk joma dise tar ekta list thakte hobe 
     2.
     3.
     4.

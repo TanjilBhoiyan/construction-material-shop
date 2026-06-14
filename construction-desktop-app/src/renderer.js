@@ -7,11 +7,15 @@ const path = require('path');
 const { supabase, checkConnection } = require('./config/supabaseClient');
 const { fetchProducts, initProductForm } = require('./modules/inventory/index');
 const { initBillingModule, populateBillingDropdown } = require('./modules/billing/index'); 
-const { fetchDailyReports } = require('./modules/reports');  
+//const { fetchDailyReports } = require('./modules/reports/index');
+const { fetchDailyReports, initReportFilters } = require('./modules/reports/index');
 const { fetchCustomers, initCustomerModule } = require('./modules/customers/index');
 
 window.supabase = supabase; 
 
+// যখন অ্যাপ চালু হবে বা রিপোর্ট ট্যাব ক্লিক হবে:
+fetchDailyReports();    // আজকের ডাটা লোড করবে
+initReportFilters();   // ফিল্টার বাটনের ক্লিক লজিক চালু করবে
 // অ্যাপের গ্লোবাল ফাংশনগুলোর বাইন্ডিং (ট্যাব স্যুইচিংয়ের সুবিধার জন্য)
 window.fetchProducts = fetchProducts;
 window.fetchDailyReports = fetchDailyReports;
