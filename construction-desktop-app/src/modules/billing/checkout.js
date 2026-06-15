@@ -15,11 +15,11 @@ async function handleCheckout(checkoutBillBtn) {
         return;
     }
 
-    // ১. ডম থেকে নতুন ইনপুটগুলোর ভ্যালু নেওয়া (HTML ID Mismatch ফিক্স করা হয়েছে)
+    // ১. ডম থেকে নতুন ইনপুটগুলোর ভ্যালু নেওয়া (HTML ID Mismatch ফিক্স করা হয়েছে)
     const customerName = document.getElementById('bill-cust-name')?.value.trim() || "অনিবন্ধিত কাস্টমার";
     const customerPhone = document.getElementById('bill-cust-phone')?.value.trim() || "";
-    const fatherName = document.getElementById('customer-father')?.value.trim() || ""; // 👈 নতুন
-    const customerAddress = document.getElementById('customer-address')?.value.trim() || ""; // 👈 নতুন
+    const fatherName = document.getElementById('customer-father')?.value.trim() || ""; 
+    const customerAddress = document.getElementById('customer-address')?.value.trim() || ""; 
     
     const summarySubtotal = document.getElementById('summary-subtotal');
     const summaryExtraCost = document.getElementById('summary-extra-cost');
@@ -56,7 +56,7 @@ async function handleCheckout(checkoutBillBtn) {
             if (currentProd.current_stock < item.quantity) {
                 showToast(`দুঃখিত! ${item.name}-এর পর্যাপ্ত স্টক নেই। বর্তমান স্টক: ${currentProd.current_stock}`, true);
                 
-                // স্টক না থাকলে বাটন আনলক করে ফিরে যাওয়া
+                // স্টক না থাকলে বাটন আনলক করে ফিরে যাওয়া
                 if (checkoutBillBtn) {
                     checkoutBillBtn.disabled = false;
                     checkoutBillBtn.innerHTML = "💾 ইনভয়েস কনফার্ম ও প্রিন্ট";
@@ -82,7 +82,7 @@ async function handleCheckout(checkoutBillBtn) {
             let custFetchErr = null;
 
             if (customerPhone !== "") {
-                // ক) ফোন নাম্বার থাকলে ফোন নাম্বার দিয়ে কাস্টমার খুঁজবো
+                // ক) ফোন নাম্বার থাকলে ফোন নাম্বার দিয়ে কাস্টমার খুঁজবো
                 let { data: resData, error: err } = await supabase
                     .from('customers')
                     .select('*')
@@ -91,7 +91,7 @@ async function handleCheckout(checkoutBillBtn) {
                 existingCustomer = resData;
                 custFetchErr = err;
             } else {
-                // খ) ফোন নাম্বার না থাকলে শুধু নাম দিয়ে ডাটাবেজে কাস্টমার খুঁজবো
+                // খ) ফোন নাম্বার না থাকলে শুধু নাম দিয়ে ডাটাবেজে কাস্টমার খুঁজবো
                 let { data: resData, error: err } = await supabase
                     .from('customers')
                     .select('*')
@@ -104,7 +104,7 @@ async function handleCheckout(checkoutBillBtn) {
             if (custFetchErr) throw custFetchErr;
 
             if (existingCustomer) {
-                // 🟡 পুরাতন কাস্টমার: রানিং বকেয়া যোগ হবে, বাবার নাম ও ঠিকানা আপডেট হবে
+                // 🟡 পুরাতন কাস্টমার: রানিং বকেয়া যোগ হবে, বাবার নাম ও ঠিকানা আপডেট হবে
                 const newTotalDue = existingCustomer.total_due + due;
                 let { error: custUpdateErr } = await supabase
                     .from('customers')
@@ -123,7 +123,6 @@ async function handleCheckout(checkoutBillBtn) {
                     .from('customers')
                     .insert([{ 
                         name: customerName, 
-                        // 👇 খালি স্ট্রিং হলে কঠোরভাবে null পাঠানো নিশ্চিত করা হলো
                         phone: customerPhone === "" ? null : customerPhone, 
                         father_name: fatherName === "" ? null : fatherName, 
                         customer_address: customerAddress === "" ? null : customerAddress, 
@@ -134,8 +133,10 @@ async function handleCheckout(checkoutBillBtn) {
             }
         }
 
-        // ৩. sales টেবিলে মেমো সেভ করা
-        const { error: saleErr } = await supabase
+        // ==========================================================
+        // ৩. sales টেবিলে মেমো সেভ করা এবং নতুন ID জেনারেট করা
+        // ==========================================================
+        const { data: savedSale, error: saleErr } = await supabase
             .from('sales')
             .insert([
                 {
@@ -150,12 +151,35 @@ async function handleCheckout(checkoutBillBtn) {
                     cash_paid: cashPaid,
                     due_amount: due
                 }
-            ]);
+            ])
+            .select();
 
         if (saleErr) throw saleErr;
 
+        // নতুন তৈরি হওয়া সেলস/মেমো এর ইউনিক আইডি
+        const newSaleId = savedSale[0].id;
+
+        // ==========================================================
+        // 🎯 ফিক্সড: কার্টের আইটেমগুলো 'sale_items' টেবিলে সেভ করা (Key Mismatch সমাধান)
+        // ==========================================================
+        if (cart && cart.length > 0) {
+            const itemsToInsert = cart.map(item => ({
+                sale_id: newSaleId,                                     // মেইন মেমো আইডি
+                product_id: item.product_id,                            // প্রোডাক্ট আইডি
+                quantity: parseFloat(item.quantity) || 0,                // পরিমাণ
+                price_per_unit: parseFloat(item.price_per_unit) || 0,   // 👈 ফিক্সড: cart.js থেকে সঠিক রেট নেওয়া হলো
+                total_price: parseFloat(item.total_price) || 0          // 👈 ফিক্সড: cart.js থেকে সঠিক মোট প্রাইস নেওয়া হলো
+            }));
+
+            const { error: itemsInsertErr } = await supabase
+                .from('sale_items')
+                .insert(itemsToInsert);
+
+            if (itemsInsertErr) throw itemsInsertErr;
+        }
+
         // 🎯 টোস্ট মেসেজ শো
-        showToast("🎉 বিল সফলভাবে সংরক্ষিত হয়েছে এবং কাস্টমার লেজার আপডেট হয়েছে!");
+        showToast("🎉 বিল এবং মালের তালিকা সফলভাবে সংরক্ষিত হয়েছে!");
 
         // ৪. ফর্ম ও কার্ট রিসেট সাইকেল
         setCart([]);
@@ -163,8 +187,8 @@ async function handleCheckout(checkoutBillBtn) {
         
         if(document.getElementById('bill-cust-name')) document.getElementById('bill-cust-name').value = '';
         if(document.getElementById('bill-cust-phone')) document.getElementById('bill-cust-phone').value = '';
-        if(document.getElementById('customer-father')) document.getElementById('customer-father').value = ''; // 👈 রিসেট
-        if(document.getElementById('customer-address')) document.getElementById('customer-address').value = ''; // 👈 রিসেট
+        if(document.getElementById('customer-father')) document.getElementById('customer-father').value = ''; 
+        if(document.getElementById('customer-address')) document.getElementById('customer-address').value = ''; 
         if(summaryExtraCost) summaryExtraCost.value = 0;
         if(summaryCostBearer) summaryCostBearer.value = 'none';
         if(summaryCashPaid) summaryCashPaid.value = 0;

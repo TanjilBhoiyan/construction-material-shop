@@ -16,7 +16,7 @@
     4.Mobile number 11 digit er kom ba besi hoite parbe na 
     5.Ekadik mobile number add korte parbo 
     6.Customer jodi ogrim tk diye rakhe ai path ta korte hobe 
-    7.
+    7.ekhon invoice korar somoy nam mile gele oi namer sathe kono customer er mil paile oitar sathe jeye add hoye jay eta fix korte hobe
     8.
     9.
     10.
