@@ -1,6 +1,7 @@
 // ==========================================
 // 🛒 1. CART & PRODUCTS STATE MANAGEMENT
 // ==========================================
+const { supabase } = require('../../config/supabaseClient'); // সেটিংস থেকে ডাটা রিড করার জন্য
 
 let cart = [];
 let globalProducts = [];
@@ -30,9 +31,64 @@ function renderCart() {
         cartTbody.appendChild(row);
     });
 
-    // কার্ট আপডেট হলেই গ্লোবাল ক্যালকুলেশন কল হবে
+    // 🎯 আপনার আগের গ্লোবাল ক্যালকুলেশন কল (ঠিক রাখা হলো)
     const { calculateBillSummary } = require('./calculations');
     calculateBillSummary();
+
+    // ⚙️ লেবার রেট সেটিংস টেবিল থেকে ডাটা এনে অতিরিক্ত খরচের ইনপুট ফিল্ড অটো-আপডেট করা (নন-ব্লকিং)
+    calculateAutoLaborCost();
+}
+
+// 🧠 ডায়নামিক সেটিংস অনুযায়ী লেবার খরচ হিসাব করার ব্যাকগ্রাউন্ড ফাংশন
+function calculateAutoLaborCost() {
+    const summaryExtraCost = document.getElementById('summary-extra-cost');
+    if (!summaryExtraCost) return;
+
+    // কার্ট খালি থাকলে অতিরিক্ত খরচ ০ করে দেবে
+    if (cart.length === 0) {
+        summaryExtraCost.value = 0;
+        // ভ্যালু চেইঞ্জ হওয়ার পর যদি এক্সিস্টিং টোটাল বিলের ওপর ইমপ্যাক্ট থাকে, তাই ইনপুট ইভেন্ট ফায়ার করা হলো
+        summaryExtraCost.dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+    }
+
+    // সুপাবেজ থেকে এসিনক্রোনাসলি (নন-ব্লকিং) সেটিংস তুলে আনা
+    supabase.from('labor_settings').select('*')
+        .then(({ data: settings, error }) => {
+            if (error) throw error;
+            if (!settings) return;
+
+            // সেটিংস ডাটাকে সহজে খোঁজার জন্য ম্যাপ করা
+            const rateMap = {};
+            settings.forEach(s => {
+                rateMap[s.category_key] = parseFloat(s.rate_per_unit) || 0;
+            });
+
+            let totalLaborCost = 0;
+
+            // কার্টের আইটেমগুলোর নাম চেক করে লেবার রেট দিয়ে গুণ করা
+            cart.forEach(item => {
+                const productNameLower = (item.name || '').toLowerCase();
+                const qty = parseFloat(item.quantity) || 0;
+
+                if (productNameLower.includes('cement') || productNameLower.includes('সিমেন্ট')) {
+                    totalLaborCost += qty * (rateMap['cement'] || 0);
+                } else if (productNameLower.includes('rod') || productNameLower.includes('রড')) {
+                    totalLaborCost += qty * (rateMap['rod'] || 0);
+                } else {
+                    totalLaborCost += qty * (rateMap['others'] || 0);
+                }
+            });
+
+            // অতিরিক্ত খরচ ফিল্ডে মান বসানো
+            summaryExtraCost.value = totalLaborCost.toFixed(2);
+            
+            // ইনপুতের মান পরিবর্তন হলে যেন আপনার বাকি ক্যালকুলেশন ফাইল এটি ডিটেক্ট করতে পারে
+            summaryExtraCost.dispatchEvent(new Event('input', { bubbles: true }));
+        })
+        .catch(err => {
+            console.error("লেবার খরচ অটো-ক্যালকুলেট করতে সমস্যা হয়েছে:", err.message);
+        });
 }
 
 // কার্ট থেকে আইটেম রিমুভ করার গ্লোবাল উইন্ডো ফাংশন
