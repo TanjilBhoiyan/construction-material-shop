@@ -1,4 +1,5 @@
-const { supabase } = require('../../config/supabaseClient'); // 👈 ২ বার পেছনে গিয়ে config ফোল্ডার ধরবে
+const { supabase } = require('../../config/supabaseClient'); // 👈 ২ বার পেছনে গিয়ে config ফোল্ডার ধরবে
+const { openCustomerLedger } = require('./customerDetails'); // 🎯 আমাদের নতুন খতিয়ান মডিউলটি যুক্ত করা হলো
 
 let currentCustomerPage = 1;
 const itemsPerPage = 20;
@@ -34,7 +35,7 @@ async function fetchCustomers(searchQuery = '') {
             query = query.order('created_at', { ascending: false }).range(from, to);
         }
 
-        let { data: customers, error } = await query;                          
+        let { data: customers, error } = await query;                                          
 
         if (error) throw error;
 
@@ -53,6 +54,8 @@ async function fetchCustomers(searchQuery = '') {
         // 🎯 ৩. কাস্টমার ডাটা টেবিলে রেন্ডার করা
         customers.forEach(cust => {
             const row = document.createElement('tr');
+            row.style.cursor = 'pointer'; // 👈 মাউস নিলে হাতের চিহ্ন দেখাবে
+            
             const dueColor = cust.total_due > 0 ? 'text-red-600 font-bold' : 'text-gray-500';
             const currentAddress = cust.customer_address || cust.address || '—';
 
@@ -63,16 +66,30 @@ async function fetchCustomers(searchQuery = '') {
                 <td class="px-4 py-3 border-b text-gray-600">${currentAddress}</td>    
                 <td class="px-4 py-3 border-b ${dueColor}">৳${cust.total_due.toFixed(2)}</td>
                 <td class="px-4 py-3 border-b text-center">
-                    <button onclick="triggerPaymentModal(${cust.id})" class="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 rounded shadow-sm font-medium">💵 টাকা জমা নিন</button>
+                    <button class="btn-collect-payment bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 rounded shadow-sm font-medium" onclick="triggerPaymentModal(${cust.id})">
+                        💵 টাকা জমা নিন
+                    </button>
                 </td>
             `;
+
+            // 🎯 রো-তে ক্লিক করলে কাস্টমারের ফুল এ টু জেড খাতা (Ledger) ওপেন হবে
+            row.addEventListener('click', (e) => {
+                // 🛑 যদি "টাকা জমা নিন" বাটনে ক্লিক করা হয়, তবে যেন ডিটেইলস পেজ ওপেন না হয়!
+                if (e.target.classList.contains('btn-collect-payment') || e.target.closest('.btn-collect-payment')) {
+                    return; 
+                }
+                
+                // বাকি যেকোনো জায়গায় ক্লিক করলে কাস্টমারের ফুল খাতা ওপেন হবে
+                openCustomerLedger(cust);
+            });
+
             customerTbody.appendChild(row);
         });
 
         const marketDueElem = document.getElementById('total-market-due');
         if (marketDueElem) marketDueElem.innerText = totalMarketDue.toFixed(2);
 
-        // 🔍 ৪. সার্চিং মোড অনুযায়ী পেজিনেশন কন্ট্রোল
+        // 🔍 ৪. সার্চিং মোড অনুযায়ী পেজিনেশন কন্ট্রোল
         if (isSearching) {
             if (pageInfo) pageInfo.innerText = `সার্চ রেজাল্ট: ${customers.length} জন`;
             setupPaginationButtons(false);
@@ -95,7 +112,6 @@ function setupPaginationButtons(hasNextPage) {
 }
 
 // এক্সপোর্ট অবজেক্ট (যাতে বাইরের ফাইল পেজ নম্বর চেঞ্জ করতে পারে)
-// এই অবজেক্টটি একদম নিচের module.exports এ রিপ্লেস করুন
 module.exports = {
     fetchCustomers,
     getPage: () => currentCustomerPage,

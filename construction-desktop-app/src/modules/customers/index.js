@@ -1,5 +1,6 @@
 const { fetchCustomers, getPage, setPage, getIsSearching } = require('./customerFetch');
 const { setupPaymentLogics } = require('./customerPayment');
+const { openCustomerLedger } = require('./customerDetails');
 
 function initCustomerModule() {
     // ১. পেমেন্ট ও মডাল লজিক রান করা
@@ -48,8 +49,9 @@ function initCustomerModule() {
     }
 }
 
-// 🎯 মেইন ফাইলের (renderer.js) রিকোয়ারমেন্ট অনুযায়ী অবজেক্ট এক্সপোর্ট
+// 🎯 মেইন ফাইলের (renderer.js) রিকোয়ারমেন্ট অনুযায়ী অবজেক্ট এক্সপোর্ট
 module.exports = { 
     fetchCustomers, 
-    initCustomerModule 
+    initCustomerModule,
+    openCustomerLedger // নতুন ফিচারটি এক্সপোর্ট করা হলো
 };

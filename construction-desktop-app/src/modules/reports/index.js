@@ -28,10 +28,10 @@ function initReportFilters() {
                 e.preventDefault();
                 const selectedDate = dateInput ? dateInput.value : null;
 
-                if (!selectedDate) {
-                    alert("ভাই, দয়া করে আগে একটি তারিখ সিলেক্ট করুন।");
-                    return;
-                }
+                // if (!selectedDate) {
+                //     alert("ভাই, দয়া করে আগে একটি তারিখ সিলেক্ট করুন।");
+                //     return;
+                // }
 
                 newBtnFilter.innerText = "⏳ হিসাব আসছে...";
                 newBtnFilter.disabled = true;
