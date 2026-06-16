@@ -40,57 +40,119 @@ function renderCart() {
 }
 
 // 🧠 ডায়নামিক সেটিংস অনুযায়ী লেবার খরচ হিসাব করার ব্যাকগ্রাউন্ড ফাংশন
+// function calculateAutoLaborCost() {
+//     const summaryExtraCost = document.getElementById('summary-extra-cost');
+//     if (!summaryExtraCost) return;
+
+//     // কার্ট খালি থাকলে অতিরিক্ত খরচ ০ করে দেবে
+//     if (cart.length === 0) {
+//         summaryExtraCost.value = 0;
+//         // ভ্যালু চেইঞ্জ হওয়ার পর যদি এক্সিস্টিং টোটাল বিলের ওপর ইমপ্যাক্ট থাকে, তাই ইনপুট ইভেন্ট ফায়ার করা হলো
+//         summaryExtraCost.dispatchEvent(new Event('input', { bubbles: true }));
+//         return;
+//     }
+
+//     // সুপাবেজ থেকে এসিনক্রোনাসলি (নন-ব্লকিং) সেটিংস তুলে আনা
+//     supabase.from('labor_settings').select('*')
+//         .then(({ data: settings, error }) => {
+//             if (error) throw error;
+//             if (!settings) return;
+
+//             // সেটিংস ডাটাকে সহজে খোঁজার জন্য ম্যাপ করা
+//             const rateMap = {};
+//             settings.forEach(s => {
+//                 rateMap[s.category_key] = parseFloat(s.rate_per_unit) || 0;
+//             });
+
+//             let totalLaborCost = 0;
+
+//             // কার্টের আইটেমগুলোর নাম চেক করে লেবার রেট দিয়ে গুণ করা
+//             cart.forEach(item => {
+//                 const productNameLower = (item.name || '').toLowerCase();
+//                 const qty = parseFloat(item.quantity) || 0;
+
+//                 if (productNameLower.includes('cement') || productNameLower.includes('সিমেন্ট')) {
+//                     totalLaborCost += qty * (rateMap['cement'] || 0);
+//                 } else if (productNameLower.includes('rod') || productNameLower.includes('রড')) {
+//                     totalLaborCost += qty * (rateMap['rod'] || 0);
+//                 } else {
+//                     totalLaborCost += qty * (rateMap['others'] || 0);
+//                 }
+//             });
+
+//             // অতিরিক্ত খরচ ফিল্ডে মান বসানো
+//             summaryExtraCost.value = totalLaborCost.toFixed(2);
+            
+//             // ইনপুতের মান পরিবর্তন হলে যেন আপনার বাকি ক্যালকুলেশন ফাইল এটি ডিটেক্ট করতে পারে
+//             summaryExtraCost.dispatchEvent(new Event('input', { bubbles: true }));
+//         })
+//         .catch(err => {
+//             console.error("লেবার খরচ অটো-ক্যালকুলেট করতে সমস্যা হয়েছে:", err.message);
+//         });
+// }
+// 🧠 ডায়নামিক সেটিংস অনুযায়ী লেবার খরচ হিসাব করার ব্যাকগ্রাউন্ড ফাংশন (ইউনিট ভিত্তিক ফিক্সড লজিক)
+// 🧠 ডায়নামিক সেটিংস অনুযায়ী লেবার খরচ হিসাব করার ১০০% ডাইনামিক ফাংশন
+// 🧠 ডেটাবেজের নতুন স্ট্রাকচার (bag, kg, bundle) অনুযায়ী লেবার খরচ হিসাব করার ফিক্সড ফাংশন
 function calculateAutoLaborCost() {
     const summaryExtraCost = document.getElementById('summary-extra-cost');
     if (!summaryExtraCost) return;
 
-    // কার্ট খালি থাকলে অতিরিক্ত খরচ ০ করে দেবে
+    // কার্ট খালি থাকলে লেবার বিল ০ করে দেওয়া
     if (cart.length === 0) {
         summaryExtraCost.value = 0;
-        // ভ্যালু চেইঞ্জ হওয়ার পর যদি এক্সিস্টিং টোটাল বিলের ওপর ইমপ্যাক্ট থাকে, তাই ইনপুট ইভেন্ট ফায়ার করা হলো
         summaryExtraCost.dispatchEvent(new Event('input', { bubbles: true }));
         return;
     }
 
-    // সুপাবেজ থেকে এসিনক্রোনাসলি (নন-ব্লকিং) সেটিংস তুলে আনা
+    // ১. সুপাবেজ থেকে লেবার সেটিংসের লেটেস্ট রেট নিয়ে আসা
     supabase.from('labor_settings').select('*')
         .then(({ data: settings, error }) => {
             if (error) throw error;
             if (!settings) return;
 
-            // সেটিংস ডাটাকে সহজে খোঁজার জন্য ম্যাপ করা
+            // ডেটাবেজের রেটগুলোকে একটি ম্যাপে নেওয়া (যেমন: {'bag': 2, 'kg': 0.2, 'bundle': 0, 'others': 0})
             const rateMap = {};
             settings.forEach(s => {
-                rateMap[s.category_key] = parseFloat(s.rate_per_unit) || 0;
+                rateMap[s.category_key.trim().toLowerCase()] = parseFloat(s.rate_per_unit) || 0;
             });
 
             let totalLaborCost = 0;
 
-            // কার্টের আইটেমগুলোর নাম চেক করে লেবার রেট দিয়ে গুণ করা
+            // ২. কার্টের প্রতিটা প্রোডাক্ট লুপ চালিয়ে হিসাব করা
             cart.forEach(item => {
-                const productNameLower = (item.name || '').toLowerCase();
                 const qty = parseFloat(item.quantity) || 0;
+                
+                // কার্টের প্রোডাক্টের ইউনিট রিড করা (যেমন: "ব্যাগ", "কেজি" বা "১ ব্যাগ")
+                const rawUnit = (item.unit || '').trim().toLowerCase();
+                let targetKey = 'others'; // ডিফল্ট কি
 
-                if (productNameLower.includes('cement') || productNameLower.includes('সিমেন্ট')) {
-                    totalLaborCost += qty * (rateMap['cement'] || 0);
-                } else if (productNameLower.includes('rod') || productNameLower.includes('রড')) {
-                    totalLaborCost += qty * (rateMap['rod'] || 0);
+                // ৩. 🎯 কার্টের বাংলা/মিশ্র ইউনিটকে ডেটাবেজের ইংলিশ Key-এর সাথে নিখুঁতভাবে ম্যাচিং
+                if (rawUnit.includes('ব্যাগ') || rawUnit.includes('bag') || rawUnit.includes('bosta')) {
+                    targetKey = 'bag';
+                } else if (rawUnit.includes('কেজি') || rawUnit.includes('kg')) {
+                    targetKey = 'kg';
+                } else if (rawUnit.includes('বান্ডিল') || rawUnit.includes('bundle')) {
+                    targetKey = 'bundle';
+                }
+
+                // ৪. রেট ম্যাপ থেকে ভ্যালু নিয়ে গুণ করা
+                if (rateMap[targetKey] !== undefined) {
+                    totalLaborCost += qty * rateMap[targetKey];
                 } else {
                     totalLaborCost += qty * (rateMap['others'] || 0);
                 }
             });
 
-            // অতিরিক্ত খরচ ফিল্ডে মান বসানো
+            // ৫. অতিরিক্ত খরচ (লেবার বিল) ফিল্ডে টোটাল অ্যামাউন্ট বসানো
             summaryExtraCost.value = totalLaborCost.toFixed(2);
             
-            // ইনপুতের মান পরিবর্তন হলে যেন আপনার বাকি ক্যালকুলেশন ফাইল এটি ডিটেক্ট করতে পারে
+            // ইনপুট ইভেন্ট ফায়ার করা যাতে গ্র্যান্ড টোটাল বিলের সাথে এই লেবার বিল যোগ হয়ে যায়
             summaryExtraCost.dispatchEvent(new Event('input', { bubbles: true }));
         })
         .catch(err => {
             console.error("লেবার খরচ অটো-ক্যালকুলেট করতে সমস্যা হয়েছে:", err.message);
         });
 }
-
 // কার্ট থেকে আইটেম রিমুভ করার গ্লোবাল উইন্ডো ফাংশন
 window.removeFromCart = function(index) {
     cart.splice(index, 1);
