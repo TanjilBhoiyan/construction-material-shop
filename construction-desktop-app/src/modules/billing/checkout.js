@@ -15,21 +15,29 @@ async function handleCheckout(checkoutBillBtn) {
         return;
     }
 
-    // ১. ডম থেকে নতুন ইনপুটগুলোর ভ্যালু নেওয়া (HTML ID Mismatch ফিক্স করা হয়েছে)
+    // ১. ডম থেকে কাস্টমারের ভ্যালু নেওয়া
     const customerName = document.getElementById('bill-cust-name')?.value.trim() || "অনিবন্ধিত কাস্টমার";
     const customerPhone = document.getElementById('bill-cust-phone')?.value.trim() || "";
     const fatherName = document.getElementById('customer-father')?.value.trim() || ""; 
     const customerAddress = document.getElementById('customer-address')?.value.trim() || ""; 
     
+    // 🎯 নতুন ৪টি লেবার এবং পরিবহন সংক্রান্ত ইনপুট ও ড্রপডাউন এলিমেন্টগুলো রিড করা
+    const summaryLaborCost = document.getElementById('summary-labor-cost');
+    const summaryLaborBearer = document.getElementById('summary-labor-bearer');
+    const summaryTransportCost = document.getElementById('summary-transport-cost');
+    const summaryTransportBearer = document.getElementById('summary-transport-bearer');
+
     const summarySubtotal = document.getElementById('summary-subtotal');
-    const summaryExtraCost = document.getElementById('summary-extra-cost');
-    const summaryCostBearer = document.getElementById('summary-cost-bearer');
     const summaryTotalPayable = document.getElementById('summary-total-payable');
     const summaryCashPaid = document.getElementById('summary-cash-paid');
     const summaryCalculatedDue = document.getElementById('summary-calculated-due');
 
-    const extraCost = parseFloat(summaryExtraCost ? summaryExtraCost.value : 0) || 0;
-    const bearer = summaryCostBearer ? summaryCostBearer.value : 'none';
+    // 🎯 নতুন ভ্যালুগুলোকে পার্স করে ভ্যারিয়েবলে নেওয়া
+    const laborCost = parseFloat(summaryLaborCost ? summaryLaborCost.value : 0) || 0;
+    const laborBearer = summaryLaborBearer ? summaryLaborBearer.value : 'none';
+    const transportCost = parseFloat(summaryTransportCost ? summaryTransportCost.value : 0) || 0;
+    const transportBearer = summaryTransportBearer ? summaryTransportBearer.value : 'none';
+
     const subtotal = parseFloat(summarySubtotal ? summarySubtotal.innerText : 0) || 0;
     const totalPayable = parseFloat(summaryTotalPayable ? summaryTotalPayable.innerText : 0) || 0;
     const cashPaid = parseFloat(summaryCashPaid ? summaryCashPaid.value : 0) || 0;
@@ -82,7 +90,6 @@ async function handleCheckout(checkoutBillBtn) {
             let custFetchErr = null;
 
             if (customerPhone !== "") {
-                // ক) ফোন নাম্বার থাকলে ফোন নাম্বার দিয়ে কাস্টমার খুঁজবো
                 let { data: resData, error: err } = await supabase
                     .from('customers')
                     .select('*')
@@ -91,7 +98,6 @@ async function handleCheckout(checkoutBillBtn) {
                 existingCustomer = resData;
                 custFetchErr = err;
             } else {
-                // খ) ফোন নাম্বার না থাকলে শুধু নাম দিয়ে ডাটাবেজে কাস্টমার খুঁজবো
                 let { data: resData, error: err } = await supabase
                     .from('customers')
                     .select('*')
@@ -104,7 +110,6 @@ async function handleCheckout(checkoutBillBtn) {
             if (custFetchErr) throw custFetchErr;
 
             if (existingCustomer) {
-                // 🟡 পুরাতন কাস্টমার: রানিং বকেয়া যোগ হবে, বাবার নাম ও ঠিকানা আপডেট হবে
                 const newTotalDue = existingCustomer.total_due + due;
                 let { error: custUpdateErr } = await supabase
                     .from('customers')
@@ -118,7 +123,6 @@ async function handleCheckout(checkoutBillBtn) {
 
                 if (custUpdateErr) throw custUpdateErr;
             } else {
-                // 🟢 সম্পূর্ণ নতুন কাস্টমার: ফ্রেশ প্রোফাইল তৈরি হবে
                 let { error: custInsertErr } = await supabase
                     .from('customers')
                     .insert([{ 
@@ -145,8 +149,11 @@ async function handleCheckout(checkoutBillBtn) {
                     father_name: fatherName,
                     customer_address: customerAddress,
                     subtotal: subtotal,
-                    extra_cost: extraCost,
-                    cost_bearer: bearer,
+                    // 🎯 পুরাতন extra_cost এবং cost_bearer এর জায়গায় নতুন ৪টি সুপাবেজ কলাম ম্যাপ করা হয়েছে
+                    labor_cost: laborCost,
+                    labor_bearer: laborBearer,
+                    carrying_cost: transportCost,
+                    carrying_bearer: transportBearer,
                     total_payable: totalPayable,
                     cash_paid: cashPaid,
                     due_amount: due
@@ -156,19 +163,19 @@ async function handleCheckout(checkoutBillBtn) {
 
         if (saleErr) throw saleErr;
 
-        // নতুন তৈরি হওয়া সেলস/মেমো এর ইউনিক আইডি
+        // নতুন তৈরি হওয়া সেলস/মেমো এর ইউনিক আইডি
         const newSaleId = savedSale[0].id;
 
         // ==========================================================
-        // 🎯 ফিক্সড: কার্টের আইটেমগুলো 'sale_items' টেবিলে সেভ করা (Key Mismatch সমাধান)
+        // ৪. sale_items টেবিলে কার্টের আইটেমগুলো সেভ করা
         // ==========================================================
         if (cart && cart.length > 0) {
             const itemsToInsert = cart.map(item => ({
-                sale_id: newSaleId,                                     // মেইন মেমো আইডি
-                product_id: item.product_id,                            // প্রোডাক্ট আইডি
-                quantity: parseFloat(item.quantity) || 0,                // পরিমাণ
-                price_per_unit: parseFloat(item.price_per_unit) || 0,   // 👈 ফিক্সড: cart.js থেকে সঠিক রেট নেওয়া হলো
-                total_price: parseFloat(item.total_price) || 0          // 👈 ফিক্সড: cart.js থেকে সঠিক মোট প্রাইস নেওয়া হলো
+                sale_id: newSaleId,                                     
+                product_id: item.product_id,                            
+                quantity: parseFloat(item.quantity) || 0,                
+                price_per_unit: parseFloat(item.price_per_unit) || 0,   
+                total_price: parseFloat(item.total_price) || 0          
             }));
 
             const { error: itemsInsertErr } = await supabase
@@ -181,7 +188,7 @@ async function handleCheckout(checkoutBillBtn) {
         // 🎯 টোস্ট মেসেজ শো
         showToast("🎉 বিল এবং মালের তালিকা সফলভাবে সংরক্ষিত হয়েছে!");
 
-        // ৪. ফর্ম ও কার্ট রিসেট সাইকেল
+        // ৫. ফর্ম ও কার্ট রিসেট সাইকেল
         setCart([]);
         renderCart();
         
@@ -189,8 +196,13 @@ async function handleCheckout(checkoutBillBtn) {
         if(document.getElementById('bill-cust-phone')) document.getElementById('bill-cust-phone').value = '';
         if(document.getElementById('customer-father')) document.getElementById('customer-father').value = ''; 
         if(document.getElementById('customer-address')) document.getElementById('customer-address').value = ''; 
-        if(summaryExtraCost) summaryExtraCost.value = 0;
-        if(summaryCostBearer) summaryCostBearer.value = 'none';
+        
+        // 🎯 ফর্ম রিসেটে নতুন ৪টি অতিরিক্ত খরচ ফিল্ড ডিফল্ট করে দেওয়া
+        if(summaryLaborCost) summaryLaborCost.value = 0;
+        if(summaryLaborBearer) summaryLaborBearer.value = 'none';
+        if(summaryTransportCost) summaryTransportCost.value = 0;
+        if(summaryTransportBearer) summaryTransportBearer.value = 'none';
+        
         if(summaryCashPaid) summaryCashPaid.value = 0;
         
         calculateBillSummary();

@@ -109,8 +109,8 @@ async function openCustomerLedger(customer) {
             let itemDetailsText = itemsList.length > 0 ? ` [ ${itemsList.join(', ')} ]` : ' (মাল ক্রয়)';
             let note = `📝 মেমো #${s.id}${itemDetailsText}`;
             
-            if (s.extra_cost > 0) {
-                note += ` + খরচ: ৳${s.extra_cost} (${s.cost_bearer})`;
+            if (s.labor_cost > 0) {
+                note += ` + খরচ: ৳${s.labor_cost} (${s.labor_bearer})`;
             }
 
             mergedData.push({

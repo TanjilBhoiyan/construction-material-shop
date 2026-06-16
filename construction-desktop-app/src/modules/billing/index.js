@@ -49,7 +49,7 @@ function updateRateField(productId) {
     }
 }
 
-// 🎯 নন-ব্লকিং অ্যাপ টোস্ট নোটিফিকেশন ফাংশন
+// 🎯 NON-BLOCKING অ্যাপ টোস্ট নোটিফিকেশন ফাংশন
 function showToast(message, isError = false) {
     const oldToast = document.getElementById('app-toast');
     if (oldToast) oldToast.remove();
@@ -77,8 +77,12 @@ function initBillingModule() {
     const addToCartBtn = document.getElementById('add-to-cart-btn');
     const checkoutBillBtn = document.getElementById('checkout-bill-btn');
     
-    const summaryExtraCost = document.getElementById('summary-extra-cost');
-    const summaryCostBearer = document.getElementById('summary-cost-bearer');
+    // 🎯 পুরোনো ২টি আইডির বদলে আমাদের নতুন ৪টি আইডি রিড করা হয়েছে
+    const summaryLaborCost = document.getElementById('summary-labor-cost');
+    const summaryLaborBearer = document.getElementById('summary-labor-bearer');
+    const summaryTransportCost = document.getElementById('summary-transport-cost');
+    const summaryTransportBearer = document.getElementById('summary-transport-bearer');
+    
     const summaryCashPaid = document.getElementById('summary-cash-paid');
 
     populateBillingDropdown();
@@ -95,8 +99,12 @@ function initBillingModule() {
         };
     }
 
-    if (summaryExtraCost) summaryExtraCost.oninput = calculateBillSummary;
-    if (summaryCostBearer) summaryCostBearer.onchange = calculateBillSummary;
+    // 🎯 নতুন লেবার এবং গাড়ি ভাড়ার ইনপুট ও ড্রপডাউনে লাইভ ইভেন্ট বাইন্ডিং
+    if (summaryLaborCost) summaryLaborCost.oninput = calculateBillSummary;
+    if (summaryLaborBearer) summaryLaborBearer.onchange = calculateBillSummary;
+    if (summaryTransportCost) summaryTransportCost.oninput = calculateBillSummary;
+    if (summaryTransportBearer) summaryTransportBearer.onchange = calculateBillSummary;
+    
     if (summaryCashPaid) summaryCashPaid.oninput = calculateBillSummary;
 
     // 💾 ইনভয়েস কনফার্ম বাটন
