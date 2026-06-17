@@ -20,22 +20,42 @@
         </div>
     </div>
 
-    <div class="bg-white p-4 rounded-lg shadow mb-4 flex items-end justify-between gap-4">
-        <div class="flex items-end gap-4">
+<!-- 🛠️ তারিখ এবং লেবার কার্ডের মেইন জোড়া কন্টেইনার -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4">
+        
+        <!-- 👈 বাম পাশে: আপনার তৈরি করা সেই তারিখের নিজস্ব সাদা বক্স (w-fit) -->
+        <div class="w-fit bg-white p-4 rounded-lg shadow flex items-end gap-4 shrink-0">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">তারিখ সিলেক্ট করুন</label>
                 <input type="date" id="report-single-date"
-                    class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    class="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-48">
             </div>
             <button id="btn-filter-report"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded shadow transition">
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm px-4 py-2 rounded shadow transition shrink-0">
                 🔍 হিসাব দেখুন
             </button>
+            <button id="btn-reset-report"
+                class="bg-gray-500 hover:bg-gray-600 text-white font-medium text-sm px-4 py-2.5 rounded shadow transition shrink-0">
+                🔄 আজকের দিন
+            </button>
         </div>
-        <button id="btn-reset-report"
-            class="bg-gray-500 hover:bg-gray-600 text-white font-medium text-sm px-4 py-2 rounded shadow transition">
-            🔄 আজকের দিন
-        </button>
+        
+        <!-- 👉 ডান পাশে: উপরের ৪টি কার্ডের সাথে হুবহু সাইজ ম্যাচ করা নতুন লেবার খরচ কার্ড -->
+        <div class="shrink-0">
+            <div id="btn-open-labor-ledger" 
+                class="bg-amber-500 hover:bg-amber-600 text-white p-4 rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-4 cursor-pointer group min-w-[270px]">
+                <!-- আইকন স্পেস -->
+                <div class="bg-amber-600 text-white p-2.5 rounded group-hover:scale-110 transition-transform text-xl leading-none">
+                    🚛
+                </div>
+                <!-- টেক্সট ও অ্যামাউন্ট (উপরের কার্ডগুলোর সাথে ১:১ ম্যাচিং) -->
+                <div>
+                    <p class="text-sm font-medium text-amber-50">আজকের মোট লেবার খরচ</p>
+                    <p class="text-2xl font-black mt-0.5">৳<span id="rep-labor-cost">0.00</span></p>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div class="bg-white p-6 rounded-lg shadow-md">

@@ -1,5 +1,5 @@
 # Inventory (ইনভেন্টরি)- kaj baki ase
-    1.Unload Labor khoroch automatic calculate kore hisab o report e dekhabe 
+    1.
     2.
     3.
     4.Invoice print korar functionality
