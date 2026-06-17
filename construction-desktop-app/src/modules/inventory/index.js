@@ -3,7 +3,8 @@
 // ========================================================
 
 const { fetchProducts } = require('./fetch');
-const { handleProductSubmit } = require('./operations');
+// 🚛 operations থেকে handleProductSubmit এর সাথে নতুন initInventoryCalculations ও নিয়ে আসলাম
+const { handleProductSubmit, initInventoryCalculations } = require('./operations');
 
 // 🎯 নন-ব্লকিং অ্যাপ টোস্ট নোটিফিকেশন ফাংশন
 function showToast(message, isError = false) {
@@ -37,6 +38,7 @@ function initProductForm() {
     const allInputs = document.querySelectorAll('form input');
     let prodBuyingInput = document.getElementById('prod-buying');
     let prodSellingInput = document.getElementById('prod-selling');
+    const unloadingCostInput = document.getElementById('prod-unloading-cost'); // নতুন ফিল্ড রেফারেন্স
     
     if (!prodBuyingInput && allInputs.length >= 4) {
         prodBuyingInput = allInputs[allInputs.length - 2]; 
@@ -51,6 +53,9 @@ function initProductForm() {
     // ইনপুট ভ্যারিয়েবল অবজেক্ট পাস করার জন্য
     const inputFields = { productSelect, prodNameInput, prodUnitInput, prodStockInput, prodBuyingInput, prodSellingInput };
 
+    // 🚛 গ্রেট মুভ: লাইভ ক্যালকুলেশন লিসেনারগুলো অ্যাক্টিভেট করা (Great Move 🎯)
+    initInventoryCalculations(inputFields);
+
     // ড্রপডাউন সিলেক্ট চেঞ্জ ইভেন্ট
     if (productSelect) {
         productSelect.onchange = function() {
@@ -63,6 +68,7 @@ function initProductForm() {
                     if (prodBuyingInput) prodBuyingInput.value = prod.buying_price;
                     if (prodSellingInput) prodSellingInput.value = prod.default_selling_price;
                     if (prodStockInput) { prodStockInput.value = ''; prodStockInput.placeholder = "নতুন চালানের স্টক লিখুন"; }
+                    if (unloadingCostInput) unloadingCostInput.value = '0'; // পুরাতন প্রোডাক্ট সিলেক্ট করলে শুরুতে লেবার খরচ ০ হবে
                 }
             } else {
                 if (prodNameInput) { prodNameInput.value = ''; prodNameInput.disabled = false; }
@@ -70,6 +76,7 @@ function initProductForm() {
                 if (prodBuyingInput) prodBuyingInput.value = '';
                 if (prodSellingInput) prodSellingInput.value = '';
                 if (prodStockInput) { prodStockInput.value = ''; prodStockInput.placeholder = "0"; }
+                if (unloadingCostInput) unloadingCostInput.value = '0'; // রিসেট হলে খরচ ও জিরো হবে
             }
         };
     }

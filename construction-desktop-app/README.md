@@ -11,18 +11,18 @@
     10.
 # Noton Bill(Bikroy) নতুন বিল (বিক্রয়)- kaj baki ase
     1.
-    2.Otirikto khoroch er theke gari vara alada korte hobe
+    2.
     3.Thikana gulo sob add korte hobe
     4.Mobile number 11 digit er kom ba besi hoite parbe na 
     5.Ekadik mobile number add korte parbo 
     6.Customer jodi ogrim tk diye rakhe ai path ta korte hobe 
     7.ekhon invoice korar somoy nam mile gele oi namer sathe kono customer er mil paile oitar sathe jeye add hoye jay eta fix korte hobe
     8.noton invoice korar somoy jeno ager bokeya bill show kore 
-    9.
+    9.Mjahe majhe customer bill deyar somoy kichu tk kom payment kore but amader paid kore deya lage
     10.
 # Hisab o Report (হিসাব ও রিপোর্ট)- kaj baki ase
-    1.
-    2.
+    1.Daily labor bill ta calculate kora lagbe 
+    2.date diye search dile labor bill koto hoise seta jeno dekha jay 
     3.
     4.
     5.

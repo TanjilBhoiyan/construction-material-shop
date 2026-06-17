@@ -5,11 +5,74 @@
 const { supabase } = require('../../config/supabaseClient');
 const { fetchProducts } = require('./fetch');
 
+/**
+ * 🚛 লাইভ আনলোডিং লেবার খরচ ক্যালকুলেট করার জন্য হেল্পার ফাংশন
+ */
+async function calculateLiveUnloadingCost(prodStockInput, prodUnitInput, unloadingCostInput) {
+    if (!prodStockInput || !prodUnitInput || !unloadingCostInput) return;
+
+    const stock = parseFloat(prodStockInput.value) || 0;
+    const unit = prodUnitInput.value || '';
+    
+    if (stock <= 0 || !unit) {
+        unloadingCostInput.value = 0;
+        return;
+    }
+
+    // ইউনিটের নাম অনুযায়ী ডাটাবেজের category_key ম্যাপ করা
+    let dbCategoryKey = 'others';
+    const rawUnitLower = unit.toLowerCase();
+    if (rawUnitLower.includes('ব্যাগ') || rawUnitLower.includes('bag')) dbCategoryKey = 'bag';
+    else if (rawUnitLower.includes('কেজি') || rawUnitLower.includes('kg')) dbCategoryKey = 'kg';
+    else if (rawUnitLower.includes('বান্ডিল') || rawUnitLower.includes('bundle')) dbCategoryKey = 'bundle';
+
+    try {
+        // সুপাবেজ থেকে সরাসরি লাইভ আনলোডিং রেট তুলে আনা
+        const { data, error } = await supabase
+            .from('labor_settings')
+            .select('unloading_rate_per_unit')
+            .eq('category_key', dbCategoryKey)
+            .single();
+
+        if (error) throw error;
+
+        if (data) {
+            const rate = parseFloat(data.unloading_rate_per_unit) || 0;
+            // মোট খরচ = পরিমাণ × আনলোডিং রেট
+            unloadingCostInput.value = (stock * rate).toFixed(2);
+        }
+    } catch (err) {
+        console.error("লাইভ আনলোডিং খরচ ক্যালকুলেট করতে সমস্যা:", err.message);
+    }
+}
+
+/**
+ * 🎯 এই মডিউলের লিসেনারগুলো সেটআপ করার জন্য মেইন ইনিশিয়ালাইজার ফাংশন
+ * (এটি আপনার index.js বা ফর্ম লোড হওয়ার সময় একবার কল করে দিবেন)
+ */
+function initInventoryCalculations(inputs) {
+    const { prodStockInput, prodUnitInput } = inputs;
+    const unloadingCostInput = document.getElementById('prod-unloading-cost');
+
+    if (!prodStockInput || !prodUnitInput || !unloadingCostInput) return;
+
+    // ১. যখন ইউজার পরিমাণ (Stock) বক্সে টাইপ করবেন
+    prodStockInput.addEventListener('input', () => {
+        calculateLiveUnloadingCost(prodStockInput, prodUnitInput, unloadingCostInput);
+    });
+
+    // ২. যখন ইউজার ইউনিটের ড্রপডাউন চেঞ্জ করবেন
+    prodUnitInput.addEventListener('change', () => {
+        calculateLiveUnloadingCost(prodStockInput, prodUnitInput, unloadingCostInput);
+    });
+}
+
 async function handleProductSubmit(e, productForm, inputs) {
     e.preventDefault();
     const { showToast } = require('./index');
 
     const { productSelect, prodNameInput, prodUnitInput, prodStockInput, prodBuyingInput, prodSellingInput } = inputs;
+    const unloadingCostInput = document.getElementById('prod-unloading-cost');
 
     // ১. সাবমিট বাটনটি ডিজেবল করে দেওয়া
     const submitBtn = productForm.querySelector('button[type="submit"]');
@@ -26,6 +89,8 @@ async function handleProductSubmit(e, productForm, inputs) {
     const newStock = parseFloat(prodStockInput ? prodStockInput.value : 0) || 0;
     const buyingPrice = parseFloat(prodBuyingInput ? prodBuyingInput.value : 0) || 0;
     const sellingPrice = parseFloat(prodSellingInput ? prodSellingInput.value : 0) || 0;
+    // এডিটেবল ইনপুট বক্স থেকে ফাইনাল আনলোডিং খরচ রিড করা (ইউজার চাইলে ওভাররাইড করতে পারেন)
+    const unloadingLaborCost = parseFloat(unloadingCostInput ? unloadingCostInput.value : 0) || 0;
 
     if (!name || newStock <= 0 || buyingPrice <= 0 || sellingPrice <= 0) {
         showToast("দয়া করে সব ঘর সঠিকভাবে পূরণ করুন!", true);
@@ -39,7 +104,7 @@ async function handleProductSubmit(e, productForm, inputs) {
 
     try {
         if (selectedId) {
-            // এক্সিস্টিং限界 প্রোডাক্টের স্টক আপডেট
+            // এক্সিস্টিং প্রোডাক্টের স্টক আপডেট
             const existingProd = (window.cachedProducts || []).find(p => p.id === parseInt(selectedId));
             const finalStock = parseFloat(existingProd ? existingProd.current_stock : 0) + newStock;
 
@@ -49,7 +114,8 @@ async function handleProductSubmit(e, productForm, inputs) {
                     current_stock: finalStock,
                     buying_price: buyingPrice,
                     default_selling_price: sellingPrice,
-                    unit: unit
+                    unit: unit,
+                    unloading_labor_cost: unloadingLaborCost // ডাটাবেজে নতুন আনলোডিং খরচ সেভ
                 })
                 .eq('id', selectedId);
 
@@ -76,7 +142,8 @@ async function handleProductSubmit(e, productForm, inputs) {
                     unit,
                     current_stock: newStock,
                     buying_price: buyingPrice,
-                    default_selling_price: sellingPrice
+                    default_selling_price: sellingPrice,
+                    unloading_labor_cost: unloadingLaborCost // ডাটাবেজে নতুন আনলোডিং খরচ সেভ
                 }]);
 
             if (error) throw error;
@@ -84,9 +151,6 @@ async function handleProductSubmit(e, productForm, inputs) {
         }
 
         // 🎯 ২. লেবার সেটিংসে ইউনিটের অটো-রেজিস্ট্রেশন লজিক (১০০% পারফেক্ট ম্যাপিং)
-        // ========================================================
-        // LABOR SETTINGS AUTO INSERT
-        // ========================================================
         if (unit) {
             let dbCategoryKey = '';
             let dbCategoryNameBn = '';
@@ -125,6 +189,7 @@ async function handleProductSubmit(e, productForm, inputs) {
                             category_key: dbCategoryKey,
                             category_name_bn: dbCategoryNameBn,
                             rate_per_unit: 0,
+                            unloading_rate_per_unit: 0, // নতুন ডিফাইন করা কলাম ডিফ্লট ০ সহ
                             updated_at: new Date().toISOString()
                         }
                     ])
@@ -146,6 +211,7 @@ async function handleProductSubmit(e, productForm, inputs) {
 
         productForm.reset();
         if (prodStockInput) prodStockInput.placeholder = "0";
+        if (unloadingCostInput) unloadingCostInput.value = "0"; // খরচ বক্স রিসেট করা
 
         // ডাটা রিফ্রেশ করা
         await fetchProducts();
@@ -168,4 +234,5 @@ async function handleProductSubmit(e, productForm, inputs) {
     }
 }
 
-module.exports = { handleProductSubmit };
+// এক্সপোর্ট অবজেক্টে নতুন ফাংশনটি যোগ করে দেওয়া হলো
+module.exports = { handleProductSubmit, initInventoryCalculations };
