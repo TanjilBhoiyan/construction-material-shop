@@ -13,7 +13,7 @@ async function calculateLiveUnloadingCost(prodStockInput, prodUnitInput, unloadi
 
     const stock = parseFloat(prodStockInput.value) || 0;
     const unit = prodUnitInput.value || '';
-    
+
     if (stock <= 0 || !unit) {
         unloadingCostInput.value = 0;
         return;
@@ -104,7 +104,7 @@ async function handleProductSubmit(e, productForm, inputs) {
 
     try {
         if (selectedId) {
-            // এক্সিস্টিং প্রোডাক্টের স্টক আপডেট
+            // ১. প্রোডাক্ট টেবিল আপডেট
             const existingProd = (window.cachedProducts || []).find(p => p.id === parseInt(selectedId));
             const finalStock = parseFloat(existingProd ? existingProd.current_stock : 0) + newStock;
 
@@ -115,40 +115,57 @@ async function handleProductSubmit(e, productForm, inputs) {
                     buying_price: buyingPrice,
                     default_selling_price: sellingPrice,
                     unit: unit,
-                    unloading_labor_cost: unloadingLaborCost // ডাটাবেজে নতুন আনলোডিং খরচ সেভ
+                    unloading_labor_cost: unloadingLaborCost
                 })
                 .eq('id', selectedId);
 
             if (error) throw error;
-            showToast(`🎉 ${name}-এর স্টক সফলভাবে আপডেট হয়েছে!`);
-        } else {
-            // ডুপ্লিকেট প্রোডাক্ট নেম চেক
-            const isDuplicate = (window.cachedProducts || []).some(p => p.name.toLowerCase() === name.toLowerCase());
-            if (isDuplicate) {
-                showToast("এই নামের প্রোডাক্ট অলরেডি আছে!", true);
-                if (submitBtn) {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = "💾 ডাটাবেজে সেভ করুন";
-                    submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-                return;
+
+            // 🆕 ২. লগ ইনসার্ট (আপডেটের সময়)
+            if (unloadingLaborCost > 0) {
+                await supabase.from('inventory_logs').insert([{
+                    product_id: parseInt(selectedId),
+                    product_name: name,
+                    labor_cost: unloadingLaborCost
+                }]);
             }
 
-            // নতুন প্রোডাক্ট ইনসার্ট
-            const { error } = await supabase
+            showToast(`🎉 ${name}-এর স্টক সফলভাবে আপডেট হয়েছে!`);
+        } else {
+            // ১. প্রোডাক্ট ইনসার্ট
+            const { data, error } = await supabase
                 .from('products')
                 .insert([{
-                    name,
-                    unit,
+                    name, unit,
                     current_stock: newStock,
                     buying_price: buyingPrice,
                     default_selling_price: sellingPrice,
-                    unloading_labor_cost: unloadingLaborCost // ডাটাবেজে নতুন আনলোডিং খরচ সেভ
-                }]);
+                    unloading_labor_cost: unloadingLaborCost
+                }])
+                .select();
 
             if (error) throw error;
+
+            // ... প্রোডাক্ট আপডেট করার পর ঠিক এই জায়গায় চেক করুন
+            if (unloadingLaborCost > 0) {
+                console.log("🚀 লগ ইনসার্ট করার চেষ্টা করছি..."); // ডিবাগিং মেসেজ
+                const { data, error } = await supabase.from('inventory_logs').insert([{
+                    product_id: parseInt(selectedId),
+                    product_name: name,
+                    labor_cost: unloadingLaborCost
+                }]);
+
+                if (error) {
+                    console.error("❌ লগ ইনসার্ট এরর:", error); // এরর থাকলে এখানে দেখা যাবে
+                } else {
+                    console.log("✅ লগ সফলভাবে ইনসার্ট হয়েছে!");
+                }
+            }
+
             showToast(`🎉 নতুন প্রোডাক্ট "${name}" সেভ হয়েছে!`);
         }
+
+        // ... এরপরের সব লজিক আগে যেমন ছিল তেমনই থাকবে ...
 
         // 🎯 ২. লেবার সেটিংসে ইউনিটের অটো-রেজিস্ট্রেশন লজিক (১০০% পারফেক্ট ম্যাপিং)
         if (unit) {
