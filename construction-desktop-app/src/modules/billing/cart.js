@@ -86,6 +86,9 @@ function calculateAutoLaborCost() {
                 } else if (rawUnit.includes('বান্ডিল') || rawUnit.includes('bundle')) {
                     targetKey = 'bundle';
                 }
+                else if (rawUnit.includes('পিস') || rawUnit.includes('pcs')) {
+                    targetKey = 'pcs';
+                }
 
                 // ৪. রেট ম্যাপ থেকে ভ্যালু নিয়ে গুণ করা
                 if (rateMap[targetKey] !== undefined) {
