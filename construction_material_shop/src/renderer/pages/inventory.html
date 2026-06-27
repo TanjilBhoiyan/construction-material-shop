@@ -1,0 +1,54 @@
+<!-- src/renderer/pages/inventory.html -->
+<div id="inventory-screen" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-blue-600 border-b pb-2">📦 নতুন প্রোডাক্ট যোগ করুন</h2>
+        <form id="product-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">প্রোডাক্টের নাম:</label>
+                <input type="text" id="prod-name" placeholder="যেমন: BSRM Rod 10mm" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500" required>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">ইউনিট:</label>
+                    <select id="prod-unit" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border focus:outline-blue-500">
+                        <option value="কেজি">কেজি (Kg)</option>
+                        <option value="ব্যাগ">ব্যাগ (Bag)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">স্টক:</label>
+                    <input type="number" id="prod-stock" value="0" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">কেনা দাম:</label>
+                    <input type="number" id="prod-buying" placeholder="0.00" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">বিক্রয় দাম:</label>
+                    <input type="number" id="prod-selling" placeholder="0.00" class="mt-1 block w-full rounded-md p-2 bg-gray-50 border" required>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition-all">💾 সেভ করুন</button>
+        </form>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-green-600 border-b pb-2">📊 বর্তমান স্টক লিস্ট</h2>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="p-2">নাম</th>
+                    <th class="p-2">স্টক</th>
+                    <th class="p-2">কেনা</th>
+                    <th class="p-2">বিক্রি</th>
+                </tr>
+            </thead>
+            <tbody id="product-list-tbody"></tbody>
+        </table>
+    </div>
+</div>

@@ -21,8 +21,8 @@
     9.Mjahe majhe customer bill deyar somoy kichu tk kom payment kore but amader paid kore deya lage
     10.
 # Hisab o Report (হিসাব ও রিপোর্ট)- kaj baki ase
-    1.Daily labor bill ta calculate kora lagbe 
-    2.date diye search dile labor bill koto hoise seta jeno dekha jay 
+    1. 
+    2.
     3.
     4.
     5.

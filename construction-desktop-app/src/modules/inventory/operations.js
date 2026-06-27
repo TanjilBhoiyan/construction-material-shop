@@ -25,6 +25,7 @@ async function calculateLiveUnloadingCost(prodStockInput, prodUnitInput, unloadi
     if (rawUnitLower.includes('ব্যাগ') || rawUnitLower.includes('bag')) dbCategoryKey = 'bag';
     else if (rawUnitLower.includes('কেজি') || rawUnitLower.includes('kg')) dbCategoryKey = 'kg';
     else if (rawUnitLower.includes('বান্ডিল') || rawUnitLower.includes('bundle')) dbCategoryKey = 'bundle';
+    else if (rawUnitLower.includes('পিস') || rawUnitLower.includes('piece') || rawUnitLower.includes('pcs')) dbCategoryKey = 'pcs'; // নতুন লাইন
 
     try {
         // সুপাবেজ থেকে সরাসরি লাইভ আনলোডিং রেট তুলে আনা
@@ -132,7 +133,7 @@ async function handleProductSubmit(e, productForm, inputs) {
 
             showToast(`🎉 ${name}-এর স্টক সফলভাবে আপডেট হয়েছে!`);
         } else {
-            // ১. প্রোডাক্ট ইনসার্ট
+            // ১. প্রোডাক্ট ইনসার্ট করুন এবং আইডি পাওয়ার জন্য অপেক্ষা করুন
             const { data, error } = await supabase
                 .from('products')
                 .insert([{
@@ -142,26 +143,26 @@ async function handleProductSubmit(e, productForm, inputs) {
                     default_selling_price: sellingPrice,
                     unloading_labor_cost: unloadingLaborCost
                 }])
-                .select();
+                .select(); // এটি নিশ্চিত করবে যে ডাটা আসার পরই পরের লাইনে যাবে
 
             if (error) throw error;
 
-            // ... প্রোডাক্ট আপডেট করার পর ঠিক এই জায়গায় চেক করুন
+            // ২. নতুন তৈরি হওয়া প্রোডাক্টের আইডিটি নিন
+            const newProductId = data[0].id;
+            console.log("নতুন তৈরি হওয়া প্রোডাক্ট ID:", newProductId);
+
+            // ৩. আইডি পাওয়ার পরই লগে ইনসার্ট করুন
             if (unloadingLaborCost > 0) {
-                console.log("🚀 লগ ইনসার্ট করার চেষ্টা করছি..."); // ডিবাগিং মেসেজ
-                const { data, error } = await supabase.from('inventory_logs').insert([{
-                    product_id: parseInt(selectedId),
-                    product_name: name,
-                    labor_cost: unloadingLaborCost
-                }]);
+                const { error: logError } = await supabase
+                    .from('inventory_logs')
+                    .insert([{
+                        product_id: newProductId, // এখন এটি নিশ্চিতভাবে আইডি পাবে
+                        product_name: name,
+                        labor_cost: unloadingLaborCost
+                    }]);
 
-                if (error) {
-                    console.error("❌ লগ ইনসার্ট এরর:", error); // এরর থাকলে এখানে দেখা যাবে
-                } else {
-                    console.log("✅ লগ সফলভাবে ইনসার্ট হয়েছে!");
-                }
+                if (logError) console.error("লগ ইনসার্টে সমস্যা:", logError);
             }
-
             showToast(`🎉 নতুন প্রোডাক্ট "${name}" সেভ হয়েছে!`);
         }
 
@@ -183,6 +184,9 @@ async function handleProductSubmit(e, productForm, inputs) {
             } else if (rawUnitLower.includes('বান্ডিল') || rawUnitLower.includes('bundle')) {
                 dbCategoryKey = 'bundle';
                 dbCategoryNameBn = 'টিন (বান্ডিল)';
+            } else if (rawUnitLower.includes('পিস') || rawUnitLower.includes('piece') || rawUnitLower.includes('pcs')) {
+                dbCategoryKey = 'pcs';
+                dbCategoryNameBn = 'অন্যান্য (পিস)';
             } else {
                 dbCategoryKey = 'others';
                 dbCategoryNameBn = 'অন্যান্য মাল';

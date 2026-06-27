@@ -29,6 +29,7 @@ async function loadLaborSettings() {
             if (s.category_key.includes('ব্যাগ') || s.category_key.toLowerCase().includes('bag')) icon = "📦";
             if (s.category_key.includes('কেজি') || s.category_key.toLowerCase().includes('kg')) icon = "🏗️";
             if (s.category_key.includes('বান্ডিল') || s.category_key.toLowerCase().includes('bundle')) icon = "🪵";
+            if (s.category_key.includes('পিস') || s.category_key.toLowerCase().includes('pcs')) icon = "🪵";
 
             card.innerHTML = `
                 <!-- কার্ড হেডার (ক্যাটাগরির নাম) -->
