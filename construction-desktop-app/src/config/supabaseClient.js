@@ -1,30 +1,35 @@
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
-// 🛠️ Supabase Credentials
-const SUPABASE_URL = 'https://zbqrrfkhgfqfidwqrfxz.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_datT1OkeZeRtYqgyVoU4bw_H7mk8w9q';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+// সিকিউরিটি চেক: যদি কি-গুলো না পায়, তবে অ্যাপ যেন এরর না দেয়
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error("❌ পরিবেশ ভ্যারিয়েবল (Environment variables) খুঁজে পাওয়া যায়নি!");
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ডাটাবেজ কানেকশন চেক করার গ্লোবাল লজিক
 async function checkConnection() {
     const dbStatus = document.getElementById('db-status');
+    if (!dbStatus) return; // আইডি না থাকলে ফাংশন থেকে বের হয়ে যাও
+
     try {
-        if (!dbStatus) return;
+        // কানেকশন চেক করার সময় একটি লোডিং স্টেট দেখাতে পারেন
+        dbStatus.innerText = "● Connecting...";
         
-        let { data, error } = await supabase.from('products').select('id').limit(1);
+        let { error } = await supabase.from('products').select('id').limit(1);
         if (error) throw error;
 
         dbStatus.innerText = "● Cloud DB Connected";
-        dbStatus.className = "text-sm bg-green-500 text-white px-3 py-1 rounded-full font-semibold animate-none";
+        dbStatus.className = "text-sm bg-green-500 text-white px-3 py-1 rounded-full font-semibold";
     } catch (err) {
         console.error("DB Connection Error:", err.message);
-        if (dbStatus) {
-            dbStatus.innerText = "● Connection Failed!";
-            dbStatus.className = "text-sm bg-red-500 text-white px-3 py-1 rounded-full font-semibold animate-none";
-        }
+        dbStatus.innerText = "● Connection Failed!";
+        dbStatus.className = "text-sm bg-red-500 text-white px-3 py-1 rounded-full font-semibold";
     }
 }
 
-// অন্য ফাইল থেকে ব্যবহার করার জন্য এক্সপোর্ট করা হলো
+// এই ফাংশনটি অ্যাপ লোড হওয়ার সময় কল করে দিবেন
 module.exports = { supabase, checkConnection };
