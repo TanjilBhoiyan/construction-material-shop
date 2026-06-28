@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.4",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "tom-select": "^2.6.1"
   },
   "devDependencies": {
     "electron": "^30.0.1"

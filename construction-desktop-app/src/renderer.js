@@ -174,5 +174,14 @@ document.addEventListener('DOMContentLoaded', () => {
         defaultTab.className = "bg-blue-700 px-4 py-2 rounded font-semibold text-white shadow";
     }
 
+    // const addressInput = document.getElementById('customer-address');
+    // if (addressInput) {
+    //     addressInput.addEventListener('click', function() {
+    //         // এটি ক্লিক করার সাথে সাথে সাজেশন লিস্ট খুলতে সাহায্য করবে
+    //         this.blur();
+    //         this.focus();
+    //     });
+    // }
+
     console.log("🚀 সেটিংস সহ সব মডিউল এবং লজিক সফলভাবে ক্যাশ ও লোড হয়েছে।");
 });

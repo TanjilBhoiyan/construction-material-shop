@@ -1,7 +1,7 @@
 // ==========================================
 // 🚀 4. MAIN ENTRY POINT - MODULE INITIALIZER
 // ==========================================
-
+const TomSelect = require('tom-select');
 const { supabase } = require('../../config/supabaseClient');
 const { setGlobalProducts, handleAddToCart } = require('./cart');
 const { calculateBillSummary } = require('./calculations');
@@ -37,6 +37,28 @@ async function populateBillingDropdown() {
     } catch (err) {
         console.error("Dropdown loading failed:", err.message);
     }
+}
+async function populateAddressDropdown() {
+    const addressSelect = document.getElementById('customer-address');
+
+    if (!addressSelect) return;
+
+    const addresses = [
+        'উত্তর মোহাম্মদপুর','দক্ষিণ মোহাম্মদপুর','আটিপাড়া','বায়নাগড়','পিপিয়া','মালিগাঁও','কালাসোনা','উত্তর নগর','দক্ষিণ নগর',
+        'তালেরছেও','জোয়ারীখলা','বারৈয়ারা','সাচার','বুধুন্ডা','পালাখাল','টাগুড়িয়া','মাঝিগাছা','শিলাস্থান','মধুপুর','পিতাম্বর্দ্দি',
+        'পেয়ারী খোলা'
+
+    ];
+
+    addressSelect.innerHTML =
+        '<option value="">ঠিকানা নির্বাচন করুন</option>';
+
+    addresses.forEach(address => {
+        const option = document.createElement('option');
+        option.value = address;
+        option.textContent = address;
+        addressSelect.appendChild(option);
+    });
 }
 
 // সিলেক্টেড প্রোডাক্ট অনুযায়ী রেট ফিল্ড আপডেট
@@ -86,6 +108,7 @@ function initBillingModule() {
     const summaryCashPaid = document.getElementById('summary-cash-paid');
 
     populateBillingDropdown();
+    populateAddressDropdown();
 
     if (billProdSelect) {
         billProdSelect.onchange = (e) => updateRateField(e.target.value);
