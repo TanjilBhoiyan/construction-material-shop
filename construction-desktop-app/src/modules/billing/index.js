@@ -2,27 +2,26 @@
 // 🚀 4. MAIN ENTRY POINT - MODULE INITIALIZER
 // ==========================================
 const TomSelect = require('tom-select');
-const { supabase } = require('../../config/supabaseClient');
+//const { supabase } = require('../../config/supabaseClient');
 const { setGlobalProducts, handleAddToCart } = require('./cart');
 const { calculateBillSummary } = require('./calculations');
 const { handleCheckout } = require('./checkout');
+const { BillingRepository } = require('./billing.repository');
 
 // 🔄 ডাটাবেজ থেকে বিলিং পেজের প্রোডাক্ট ড্রপডাউন লোড করা
 async function populateBillingDropdown() {
     try {
         const billProdSelect = document.getElementById('bill-prod-select');
-        const billProdRate = document.getElementById('bill-prod-rate');
-        
         if (!billProdSelect) return;
 
-        let { data: products, error } = await supabase.from('products').select('*').order('name', { ascending: true });
+        // ১. রিপোজিটরি কল
+        const { data: products, error } = await BillingRepository.getProducts();
         if (error) throw error;
         
         setGlobalProducts(products);
         window.cachedProducts = products; 
         
         billProdSelect.innerHTML = '';
-        
         products.forEach(prod => {
             const opt = document.createElement('option');
             opt.value = prod.id;
@@ -33,7 +32,6 @@ async function populateBillingDropdown() {
         if (products.length > 0) {
             updateRateField(products[0].id);
         }
-
     } catch (err) {
         console.error("Dropdown loading failed:", err.message);
     }
