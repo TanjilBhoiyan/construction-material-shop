@@ -1,4 +1,4 @@
-const { supabase } = require('../../config/supabaseClient'); // 👈 ২ বার পেছনে গিয়ে config ফোল্ডার ধরবে
+const { CustomerRepository } = require('./customer.repository');
 const { fetchCustomers } = require('./customerFetch');
 function setupPaymentLogics() {
     window.triggerPaymentModal = function (id) {
@@ -81,19 +81,16 @@ function setupPaymentLogics() {
                     submitBtn.disabled = true;
                     submitBtn.innerText = "⏳ প্রসেস হচ্ছে...";
 
-                    const { error: paymentErr } = await supabase
-                        .from('customer_payments')
-                        .insert([{ customer_id: custId, amount_paid: payAmount }]);
-
+                    // ১. রিপোজিটরি ব্যবহার করে পেমেন্ট ইনসার্ট করুন
+                    const { error: paymentErr } = await CustomerRepository.addPayment({
+                        customer_id: custId,
+                        amount_paid: payAmount
+                    });
                     if (paymentErr) throw paymentErr;
 
+                    // ২. রিপোজিটরি ব্যবহার করে বকেয়া আপডেট করুন
                     const updatedDue = currentDue - payAmount;
-
-                    const { error: custUpdateErr } = await supabase
-                        .from('customers')
-                        .update({ total_due: updatedDue })
-                        .eq('id', custId);
-
+                    const { error: custUpdateErr } = await CustomerRepository.updateCustomerDue(custId, updatedDue);
                     if (custUpdateErr) throw custUpdateErr;
 
                     showToast(`🎉 ৳${payAmount.toFixed(2)} সফলভাবে জমা নেওয়া হয়েছে!`);

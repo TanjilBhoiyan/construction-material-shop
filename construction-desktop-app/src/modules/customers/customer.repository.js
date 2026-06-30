@@ -46,6 +46,18 @@ const CustomerRepository = {
             query = query.order('created_at', { ascending: false }).range(from, to);
         }
         return await query;
+    },
+    // পেমেন্ট রেকর্ড ইনসার্ট করা
+    async addPayment(paymentData) {
+        return await supabase.from('customer_payments').insert([paymentData]);
+    },
+
+    // কাস্টমারের বকেয়া আপডেট করা
+    async updateCustomerDue(customerId, newDue) {
+        return await supabase
+            .from('customers')
+            .update({ total_due: newDue })
+            .eq('id', customerId);
     }
 };
 
