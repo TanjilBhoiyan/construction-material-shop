@@ -30,6 +30,22 @@ const CustomerRepository = {
             .from('customer_payments')
             .select('*')
             .eq('customer_id', customerId);
+    },
+    // সব কাস্টমারের মোট বকেয়া বের করা
+    async getMarketDueSummary() {
+        return await supabase.from('customers').select('total_due');
+    },
+
+    // কাস্টমার লিস্ট আনা (পেজিনেশন ও সার্চ সহ)
+    async getCustomers(searchQuery, from, to) {
+        let query = supabase.from('customers').select('*');
+        
+        if (searchQuery && searchQuery.trim() !== '') {
+            query = query.or(`name.ilike.%${searchQuery}%,phone.ilike.%${searchQuery}%`);
+        } else {
+            query = query.order('created_at', { ascending: false }).range(from, to);
+        }
+        return await query;
     }
 };
 
