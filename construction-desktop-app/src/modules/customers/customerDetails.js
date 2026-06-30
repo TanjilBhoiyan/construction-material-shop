@@ -1,4 +1,6 @@
-const { supabase } = require('../../config/supabaseClient');
+//const { supabase } = require('../../config/supabaseClient');
+const { CustomerRepository } = require('./customer.repository');
+
 
 // 🔄 তারিখ ও সময়কে সুন্দর বাংলা ফরম্যাটে রূপান্তর
 function formatBanglaDateTime(dateStr) {
@@ -38,63 +40,29 @@ async function openCustomerLedger(customer) {
         document.getElementById('ledger-cust-phone').innerText = phone || '—';
 
         const tbody = document.getElementById('customer-ledger-tbody');
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">⏳ খাতা খোলা হচ্ছে, দয়া করে অপেক্ষা করুন...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">⏳ খাতা খোলা হচ্ছে, দয়া করে অপেক্ষা করুন...</td></tr>`;
 
-        // 🧠 ১. প্রথমে শুধুমাত্র sales টেবিল থেকে ডাটা আনা (No Join Query)
-        let sales = [];
-        let salesQuery = supabase.from('sales').select('*');
-        
-        if (phone) {
-            salesQuery = salesQuery.or(`customer_phone.eq.${phone},customer_name.eq.${customerName}`);
-        } else {
-            salesQuery = salesQuery.eq('customer_name', customerName);
-        }
-        
-        const { data: salesData, error: salesErr } = await salesQuery;
+        // 🧠 রিপোজিটরি ব্যবহার করে ডাটা আনা
+        const { data: salesData, error: salesErr } = await CustomerRepository.getSalesByCustomer(phone, customerName);
         if (salesErr) throw salesErr;
-        if (salesData) sales = salesData;
+        const sales = salesData || [];
 
-        // 🧠 ২. সেফগার্ড: সেলস আইডিগুলোর আন্ডারে sale_items এবং products আলাদা কুয়েরিতে আনা
         let allSaleItems = [];
         if (sales.length > 0) {
             const saleIds = sales.map(s => s.id);
-            
-            // sale_items টেবিল থেকে প্রোডাক্টের নামসহ ডাটা নিয়ে আসা
-            const { data: itemsData, error: itemsErr } = await supabase
-                .from('sale_items')
-                .select(`
-                    sale_id,
-                    quantity,
-                    price_per_unit,
-                    total_price,
-                    products ( name )
-                `)
-                .in('sale_id', saleIds);
-                
-            if (!itemsErr && itemsData) {
-                allSaleItems = itemsData;
-            } else if (itemsErr) {
-                console.warn("sale_items লোড করা যায়নি, কিন্তু ব্রেক করবে না:", itemsErr.message);
-            }
+            const { data: itemsData, error: itemsErr } = await CustomerRepository.getSaleItemsBySaleIds(saleIds);
+            if (!itemsErr && itemsData) allSaleItems = itemsData;
         }
 
-        // ৩. customer_payments টেবিল থেকে ডাটা আনা
-        let payments = [];
-        const { data: payData, error: payErr } = await supabase
-            .from('customer_payments')
-            .select('*')
-            .eq('customer_id', customerId);
-            
+        const { data: payData, error: payErr } = await CustomerRepository.getCustomerPayments(customerId);
         if (payErr) throw payErr;
-        if (payData) payments = payData;
+        const payments = payData || [];
 
-        // 🔀 ৪. ডেটা মার্জ ও নিখুঁত আইডি ও ডেট ভিত্তিক সর্টিং
+        // 🔀 ডেটা মার্জ ও সর্টিং
         let mergedData = [];
 
         sales.forEach(s => {
-            // এই নির্দিষ্ট বিক্রয়ের (sale_id) আইটেমগুলো ফিল্টার করা
             const currentItems = allSaleItems.filter(item => item.sale_id === s.id);
-            
             let itemsList = [];
             let ratesList = [];
 
@@ -106,80 +74,48 @@ async function openCustomerLedger(customer) {
                 });
             }
 
-            let itemDetailsText = itemsList.length > 0 ? ` [ ${itemsList.join(', ')} ]` : ' (মাল ক্রয়)';
+            let itemDetailsText = itemsList.length > 0 ? ` [ ${itemsList.join(', ')} ]` : ' (মাল ক্রয়)';
             let note = `📝 মেমো #${s.id}${itemDetailsText}`;
-            
-            if (s.labor_cost > 0) {
-                note += ` + খরচ: ৳${s.labor_cost} (${s.labor_bearer})`;
-            }
+            if (s.labor_cost > 0) note += ` + খরচ: ৳${s.labor_cost} (${s.labor_bearer})`;
 
             mergedData.push({
-                id: s.id,
-                date: new Date(s.created_at),
-                type: 'sale',
-                description: note, 
-                rate: ratesList.length > 0 ? ratesList.join('<br>') : `সাবটোটাল: ৳${s.subtotal}`,
-                males_dam: parseFloat(s.subtotal || 0), 
-                total_payable: parseFloat(s.total_payable || 0), 
-                cash_paid: parseFloat(s.cash_paid || 0),
-                raw_date: s.created_at
+                id: s.id, date: new Date(s.created_at), type: 'sale',
+                description: note, rate: ratesList.length > 0 ? ratesList.join('<br>') : `সাবটোটাল: ৳${s.subtotal}`,
+                males_dam: parseFloat(s.subtotal || 0), total_payable: parseFloat(s.total_payable || 0), 
+                cash_paid: parseFloat(s.cash_paid || 0), raw_date: s.created_at
             });
         });
 
         payments.forEach(p => {
             mergedData.push({
-                id: p.id,
-                date: new Date(p.payment_date || p.created_at),
-                type: 'payment',
-                description: '💵 ক্যাশ বকেয়া জমা',
-                rate: '—',
-                males_dam: 0,
-                total_payable: 0,
-                cash_paid: parseFloat(p.amount_paid || 0),
-                raw_date: p.payment_date || p.created_at
+                id: p.id, date: new Date(p.payment_date || p.created_at), type: 'payment',
+                description: '💵 ক্যাশ বকেয়া জমা', rate: '—', males_dam: 0, total_payable: 0,
+                cash_paid: parseFloat(p.amount_paid || 0), raw_date: p.payment_date || p.created_at
             });
         });
 
-        // নিখুঁত সর্টিং
-        mergedData.sort((a, b) => {
-            if (a.date.getTime() !== b.date.getTime()) {
-                return a.date - b.date;
-            }
-            return a.id - b.id; 
-        });
+        mergedData.sort((a, b) => (a.date.getTime() !== b.date.getTime()) ? a.date - b.date : a.id - b.id);
 
-        // 📈 টেবিল রেন্ডারিং ও রানিং জের গণনা
+        // 📈 টেবিল রেন্ডারিং
         tbody.innerHTML = '';
-        let runningDue = 0;
-        let totalBought = 0;
-        let totalPaid = 0;
+        let runningDue = 0, totalBought = 0, totalPaid = 0;
 
         if (mergedData.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">এই কাস্টমারের কোনো লেনদেনের ইতিহাস পাওয়া যায়নি।</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-muted">এই কাস্টমারের কোনো লেনদেনের ইতিহাস পাওয়া যায়নি।</td></tr>`;
             updateSummaryCards(0, 0, 0);
             setupBackButton(detailsView, mainListArea);
             return;
         }
 
         mergedData.forEach(row => {
-            let description = row.description;
-            let rates = row.rate;
-            let totalCostText = "—";
-            let paymentText = "—";
+            let totalCostText = (row.type === 'sale') ? `৳${row.males_dam.toFixed(2)}` : "—";
+            let paymentText = (row.cash_paid > 0) ? `৳${row.cash_paid.toFixed(2)} ${row.type === 'sale' ? '(নগদ)' : ''}` : "—";
 
             if (row.type === 'sale') {
-                totalCostText = `৳${row.males_dam.toFixed(2)}`;
-                
                 runningDue += row.total_payable;
                 totalBought += row.total_payable;
-
-                if (row.cash_paid > 0) {
-                    runningDue -= row.cash_paid;
-                    totalPaid += row.cash_paid;
-                    paymentText = `৳${row.cash_paid.toFixed(2)} (নগদ)`;
-                }
-            } else if (row.type === 'payment') {
-                paymentText = `৳${row.cash_paid.toFixed(2)}`;
+                if (row.cash_paid > 0) { runningDue -= row.cash_paid; totalPaid += row.cash_paid; }
+            } else {
                 runningDue -= row.cash_paid;
                 totalPaid += row.cash_paid;
             }
@@ -188,8 +124,8 @@ async function openCustomerLedger(customer) {
             tr.className = "border-b border-gray-100 hover:bg-gray-50";
             tr.innerHTML = `
                 <td class="px-3 py-3 text-center text-gray-500 text-xs" style="white-space: nowrap;">${formatBanglaDateTime(row.raw_date)}</td>
-                <td class="px-3 py-3 text-left text-sm font-medium text-gray-900">${description}</td>
-                <td class="px-3 py-3 text-center text-xs text-gray-600 leading-relaxed">${rates}</td>
+                <td class="px-3 py-3 text-left text-sm font-medium text-gray-900">${row.description}</td>
+                <td class="px-3 py-3 text-center text-xs text-gray-600 leading-relaxed">${row.rate}</td>
                 <td class="px-3 py-3 text-right text-sm font-semibold text-blue-600">${totalCostText}</td>
                 <td class="px-3 py-3 text-right text-sm font-semibold text-green-600">${paymentText}</td>
                 <td class="px-3 py-3 text-right text-sm font-bold pr-6 ${runningDue > 0 ? 'text-red-600' : 'text-gray-700'}" style="white-space: nowrap;">৳${runningDue.toFixed(2)}</td>
@@ -201,8 +137,8 @@ async function openCustomerLedger(customer) {
         setupBackButton(detailsView, mainListArea);
 
     } catch (err) {
-        console.error("কাস্টমার খাতা লোড করতে সমস্যা হয়েছে:", err.message);
-        alert("খাতা লোড করতে সমস্যা হয়েছে ভাই! কনসোলে এরর চেক করুন।");
+        console.error("কাস্টমার খাতা লোড করতে সমস্যা হয়েছে:", err.message);
+        alert("খাতা লোড করতে সমস্যা হয়েছে ভাই! কনসোলে এরর চেক করুন।");
     }
 }
 
