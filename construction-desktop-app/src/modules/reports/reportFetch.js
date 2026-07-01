@@ -1,68 +1,40 @@
-const { supabase } = require('../../config/supabaseClient');
+// reportFetch.js
+const { ReportsRepository } = require('./reports.repository');
+
+// হেল্পার ফাংশন: তারিখ কনভার্ট করার জন্য
+function getDateRange(targetDate) {
+    let start, end;
+    if (targetDate) {
+        start = new Date(`${targetDate}T00:00:00`).toISOString();
+        end = new Date(`${targetDate}T23:59:59.999`).toISOString();
+    } else {
+        const now = new Date();
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
+    }
+    return { start, end };
+}
 
 async function getDailySalesData(targetDate = null) {
     try {
-        let startIso, endIso;
-
-        if (targetDate) {
-            const localStart = new Date(`${targetDate}T00:00:00`);
-            const localEnd = new Date(`${targetDate}T23:59:59.999`);
-            startIso = localStart.toISOString();
-            endIso = localEnd.toISOString();
-        } else {
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-            startIso = startOfDay.toISOString();
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-            endIso = endOfDay.toISOString();
-        }
-
-        let { data: sales, error } = await supabase
-            .from('sales')
-            .select('*') 
-            .gte('created_at', startIso)
-            .lte('created_at', endIso)
-            .order('created_at', { ascending: false });
-
+        const { start, end } = getDateRange(targetDate);
+        const { data: sales, error } = await ReportsRepository.getSalesByDate(start, end);
         if (error) throw error;
         return sales || [];
     } catch (err) {
-        console.error("Supabase থেকে সেলস ডাটা আনতে সমস্যা:", err.message);
+        console.error("সেলস ডাটা আনতে সমস্যা:", err.message);
         return [];
     }
 }
 
-// 📦 🆕 নতুন ফাংশন: Products টেবিল থেকে আনলোডিং ডাটা আনার জন্য
 async function getDailyInventoryData(targetDate = null) {
-    
     try {
-        let startIso, endIso;
-
-        if (targetDate) {
-            const localStart = new Date(`${targetDate}T00:00:00`);
-            const localEnd = new Date(`${targetDate}T23:59:59.999`);
-            startIso = localStart.toISOString();
-            endIso = localEnd.toISOString();
-        } else {
-            const now = new Date();
-            const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-            startIso = startOfDay.toISOString();
-            const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-            endIso = endOfDay.toISOString();
-        }
-
-        // 🚨 এই লাইনটি পরিবর্তন করুন: 'products' এর বদলে 'inventory_logs' দিন
-        let { data: logs, error } = await supabase
-            .from('inventory_logs') 
-            .select('*') 
-            .gte('created_at', startIso)
-            .lte('created_at', endIso)
-            .order('created_at', { ascending: false });
-
+        const { start, end } = getDateRange(targetDate);
+        const { data: logs, error } = await ReportsRepository.getInventoryLogsByDate(start, end);
         if (error) throw error;
-        return logs || []; // এখন ডাটাগুলো logs হিসেবে আসবে
+        return logs || [];
     } catch (err) {
-        console.error("Supabase থেকে ইনভেন্টরি লগ আনতে সমস্যা:", err.message);
+        console.error("ইনভেন্টরি লগ আনতে সমস্যা:", err.message);
         return [];
     }
 }

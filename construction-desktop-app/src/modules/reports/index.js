@@ -1,5 +1,4 @@
 const { getDailySalesData, getDailyInventoryData } = require('./reportFetch');
-// 🚨 আপডেট: ফাইলের নামের বানান ঠিক করা হয়েছে (reportUI এর বদলে reportUi)
 const { renderDailyReports, renderLaborReports } = require('./reportUi');
 
 async function fetchDailyReports(targetDate = null) {
