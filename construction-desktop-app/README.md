@@ -12,7 +12,7 @@
 # Noton Bill(Bikroy) নতুন বিল (বিক্রয়)- kaj baki ase
     1.
     2.
-    3.Thikana gulo sob add korte hobe
+    3.
     4.Mobile number 11 digit er kom ba besi hoite parbe na 
     5.Ekadik mobile number add korte parbo 
     6.Customer jodi ogrim tk diye rakhe ai path ta korte hobe 
