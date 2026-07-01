@@ -58,7 +58,9 @@ const InventoryService = {
         }
     },
 
-    
+    getProductById(id, cachedProducts) {
+        return (cachedProducts || []).find(p => p.id === parseInt(id));
+    }
 
     
 };

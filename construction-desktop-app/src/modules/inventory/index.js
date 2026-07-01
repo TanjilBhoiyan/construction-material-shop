@@ -2,8 +2,8 @@
 // 🚀 3. INVENTORY MAIN ENTRY POINT & EVENT INITIALIZER
 // ========================================================
 
+const { InventoryService } = require('./inventory.service');
 const { fetchProducts } = require('./fetch');
-// 🚛 operations থেকে handleProductSubmit এর সাথে নতুন initInventoryCalculations ও নিয়ে আসলাম
 const { handleProductSubmit, initInventoryCalculations } = require('./operations');
 
 // 🎯 নন-ব্লকিং অ্যাপ টোস্ট নোটিফিকেশন ফাংশন
@@ -38,7 +38,7 @@ function initProductForm() {
     const allInputs = document.querySelectorAll('form input');
     let prodBuyingInput = document.getElementById('prod-buying');
     let prodSellingInput = document.getElementById('prod-selling');
-    const unloadingCostInput = document.getElementById('prod-unloading-cost'); // নতুন ফিল্ড রেফারেন্স
+    const unloadingCostInput = document.getElementById('prod-unloading-cost');
     
     if (!prodBuyingInput && allInputs.length >= 4) {
         prodBuyingInput = allInputs[allInputs.length - 2]; 
@@ -50,38 +50,35 @@ function initProductForm() {
         return;
     }
 
-    // ইনপুট ভ্যারিয়েবল অবজেক্ট পাস করার জন্য
     const inputFields = { productSelect, prodNameInput, prodUnitInput, prodStockInput, prodBuyingInput, prodSellingInput };
 
-    // 🚛 গ্রেট মুভ: লাইভ ক্যালকুলেশন লিসেনারগুলো অ্যাক্টিভেট করা (Great Move 🎯)
+    // লাইভ ক্যালকুলেশন লিসেনারগুলো অ্যাক্টিভেট করা
     initInventoryCalculations(inputFields);
 
     // ড্রপডাউন সিলেক্ট চেঞ্জ ইভেন্ট
     if (productSelect) {
         productSelect.onchange = function() {
-            const selectedId = parseInt(this.value);
-            if (selectedId && (window.cachedProducts || []).length > 0) {
-                const prod = window.cachedProducts.find(p => p.id === selectedId);
-                if (prod) {
-                    if (prodNameInput) { prodNameInput.value = prod.name; prodNameInput.disabled = true; }
-                    if (prodUnitInput) prodUnitInput.value = prod.unit;
-                    if (prodBuyingInput) prodBuyingInput.value = prod.buying_price;
-                    if (prodSellingInput) prodSellingInput.value = prod.default_selling_price;
-                    if (prodStockInput) { prodStockInput.value = ''; prodStockInput.placeholder = "নতুন চালানের স্টক লিখুন"; }
-                    if (unloadingCostInput) unloadingCostInput.value = '0'; // পুরাতন প্রোডাক্ট সিলেক্ট করলে শুরুতে লেবার খরচ ০ হবে
-                }
+            const prod = InventoryService.getProductById(this.value, window.cachedProducts);
+            
+            if (prod) {
+                if (prodNameInput) { prodNameInput.value = prod.name; prodNameInput.disabled = true; }
+                if (prodUnitInput) prodUnitInput.value = prod.unit;
+                if (prodBuyingInput) prodBuyingInput.value = prod.buying_price;
+                if (prodSellingInput) prodSellingInput.value = prod.default_selling_price;
+                if (prodStockInput) { prodStockInput.value = ''; prodStockInput.placeholder = "নতুন চালানের স্টক লিখুন"; }
+                if (unloadingCostInput) unloadingCostInput.value = '0';
             } else {
                 if (prodNameInput) { prodNameInput.value = ''; prodNameInput.disabled = false; }
                 if (prodUnitInput) prodUnitInput.selectedIndex = 0;
                 if (prodBuyingInput) prodBuyingInput.value = '';
                 if (prodSellingInput) prodSellingInput.value = '';
                 if (prodStockInput) { prodStockInput.value = ''; prodStockInput.placeholder = "0"; }
-                if (unloadingCostInput) unloadingCostInput.value = '0'; // রিসেট হলে খরচ ও জিরো হবে
+                if (unloadingCostInput) unloadingCostInput.value = '0';
             }
         };
     }
 
-    // ফর্ম সাবমিট ইভেন্ট বাইন্ডিং
+    // ফর্ম সাবমিট ইভেন্ট
     productForm.onsubmit = function(e) {
         handleProductSubmit(e, productForm, inputFields);
     };
