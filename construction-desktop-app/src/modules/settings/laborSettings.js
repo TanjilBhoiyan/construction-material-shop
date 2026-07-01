@@ -1,139 +1,80 @@
-const { supabase } = require('../../config/supabaseClient');
+const { SettingsRepository } = require('./settings.repository');
 
-// 🔄 ১. ডাটাবেজ থেকে সব লেবার রেট এনে ডাইনামিকালি কার্ড/ইনপুট বক্স জেনারেট করা
 async function loadLaborSettings() {
     try {
         const container = document.getElementById('labor-rates-container');
         if (!container) return;
 
-        // সুপাবেজ থেকে সব লেবার সেটিংস তুলে আনা (নতুন কলাম সহ)
-        const { data: settings, error } = await supabase.from('labor_settings').select('*').order('category_key', { ascending: true });
+        const { data: settings, error } = await SettingsRepository.getLaborSettings();
         if (error) throw error;
 
         if (!settings || settings.length === 0) {
-            container.innerHTML = `<div class="col-span-2 text-center py-4 text-amber-600 font-medium">⚠️ ডাটাবেজে কোনো লেবার সেটিংস পাওয়া যায়নি!</div>`;
+            container.innerHTML = `<div class="col-span-2 text-center py-4 text-amber-600 font-medium">⚠️ কোনো সেটিংস পাওয়া যায়নি!</div>`;
             return;
         }
 
-        container.innerHTML = ''; // লোডিং টেক্সট ক্লিয়ার করা
-
-        // লুপ চালিয়ে প্রতিটা ইউনিটের জন্য ডাইনামিক HTML কার্ড তৈরি (ভিতরে ২টি করে ইনপুট থাকবে)
+        container.innerHTML = '';
         settings.forEach(s => {
             const card = document.createElement('div');
-            card.className = "bg-gray-50 p-5 rounded-lg border border-gray-200 animate-fade-in shadow-sm flex flex-col gap-4";
+            card.className = "bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-4";
             
-            let icon = "📦";
             let unitText = `প্রতি ${s.category_key}`;
-            
-            // ইউনিটের নাম অনুযায়ী আইকন চেঞ্জ করার জন্য
-            if (s.category_key.includes('ব্যাগ') || s.category_key.toLowerCase().includes('bag')) icon = "📦";
-            if (s.category_key.includes('কেজি') || s.category_key.toLowerCase().includes('kg')) icon = "🏗️";
-            if (s.category_key.includes('বান্ডিল') || s.category_key.toLowerCase().includes('bundle')) icon = "🪵";
-            if (s.category_key.includes('পিস') || s.category_key.toLowerCase().includes('pcs')) icon = "🪵";
-
             card.innerHTML = `
-                <!-- কার্ড হেডার (ক্যাটাগরির নাম) -->
-                <div class="text-base font-bold text-gray-800 border-b pb-2 flex items-center gap-2">
-                    ${icon} ${s.category_name_bn || s.category_key}
-                </div>
-
+                <div class="text-base font-bold text-gray-800 border-b pb-2">${s.category_name_bn || s.category_key}</div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <!-- ইনপুট ১: লোডিং বা বিক্রয় লেবার রেট -->
                     <div>
-                        <label class="block text-xs font-semibold text-gray-500 mb-1">🛒 লোডিং / বিক্রয় রেট:</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400 font-bold text-sm">৳</span>
-                            <input type="text" 
-                                inputmode="decimal"
-                                data-key="${s.category_key}" 
-                                data-type="loading"
-                                value="${s.rate_per_unit || 0}" 
-                                oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1');"
-                                class="labor-loading-input w-full pl-7 pr-12 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-gray-700 text-base">
-                            <span class="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 text-[10px] font-medium bg-gray-100 border-l px-1.5 rounded-r-md">${unitText}</span>
-                        </div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">🛒 লোডিং রেট:</label>
+                        <input type="text" data-key="${s.category_key}" data-type="loading" value="${s.rate_per_unit || 0}" class="labor-loading-input w-full p-2 border rounded">
                     </div>
-
-                    <!-- ইনপুট ২: নতুন আনলোডিং লেবার রেট (Great Move 🎯) -->
                     <div>
-                        <label class="block text-xs font-semibold text-blue-600 mb-1">🚛 আনলোডিং / ক্রয় রেট:</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-blue-400 font-bold text-sm">৳</span>
-                            <input type="text" 
-                                inputmode="decimal"
-                                data-key="${s.category_key}" 
-                                data-type="unloading"
-                                value="${s.unloading_rate_per_unit || 0}" 
-                                oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\\..*?)\\..*/g, '$1');"
-                                class="labor-unloading-input w-full pl-7 pr-12 py-1.5 border border-blue-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-700 text-base bg-blue-50/30">
-                            <span class="absolute inset-y-0 right-0 pr-2 flex items-center text-blue-400 text-[10px] font-medium bg-blue-100/70 border-l border-blue-200 px-1.5 rounded-r-md">${unitText}</span>
-                        </div>
+                        <label class="block text-xs font-semibold text-blue-600 mb-1">🚛 আনলোডিং রেট:</label>
+                        <input type="text" data-key="${s.category_key}" data-type="unloading" value="${s.unloading_rate_per_unit || 0}" class="labor-unloading-input w-full p-2 border rounded">
                     </div>
                 </div>
             `;
             container.appendChild(card);
         });
-
     } catch (err) {
-        console.error("লেবার সেটিংস লোড করতে সমস্যা:", err.message);
+        console.error("সেটিংস লোড এরর:", err.message);
     }
 }
 
-// 💾 ২. "রেট সেটিংস আপডেট করুন" বাটনের ইভেন্ট হ্যান্ডলার
 function setupSettingsEvents() {
     const btnSave = document.getElementById('btn-save-labor-settings');
     if (!btnSave) return;
 
     btnSave.onclick = async function(e) {
         e.preventDefault();
-        
         const loadingInputs = document.querySelectorAll('.labor-loading-input');
         const unloadingInputs = document.querySelectorAll('.labor-unloading-input');
-        if (loadingInputs.length === 0) return;
-
+        
         try {
             btnSave.innerText = "⏳ আপডেট হচ্ছে...";
             btnSave.disabled = true;
 
-            // ডাটাবেজ আপডেটের অবজেক্ট তৈরি করার জন্য একটি ম্যাপ ব্যবহার করি
-            const updatePayloads = {};
-
-            // ১. লোডিং ইনপুট রিড করা
-            loadingInputs.forEach(input => {
-                const key = input.getAttribute('data-key');
-                const rate = parseFloat(input.value) || 0;
-                if (!updatePayloads[key]) updatePayloads[key] = {};
-                updatePayloads[key].rate_per_unit = rate;
+            const updateMap = {};
+            loadingInputs.forEach(i => {
+                const key = i.getAttribute('data-key');
+                if(!updateMap[key]) updateMap[key] = {};
+                updateMap[key].rate_per_unit = parseFloat(i.value) || 0;
+            });
+            unloadingInputs.forEach(i => {
+                const key = i.getAttribute('data-key');
+                if(!updateMap[key]) updateMap[key] = {};
+                updateMap[key].unloading_rate_per_unit = parseFloat(i.value) || 0;
             });
 
-            // ২. আনলোডিং ইনপুট রিড করা
-            unloadingInputs.forEach(input => {
-                const key = input.getAttribute('data-key');
-                const rate = parseFloat(input.value) || 0;
-                if (!updatePayloads[key]) updatePayloads[key] = {};
-                updatePayloads[key].unloading_rate_per_unit = rate;
-            });
-
-            // ৩. লুপ চালিয়ে একবারে প্রতিটা ক্যাটাগরির দুটি রেটই সুপাবেজে আপডেট করা
-            for (let key in updatePayloads) {
-                const { error } = await supabase
-                    .from('labor_settings')
-                    .update({ 
-                        rate_per_unit: updatePayloads[key].rate_per_unit, 
-                        unloading_rate_per_unit: updatePayloads[key].unloading_rate_per_unit, // নতুন কলাম সিঙ্ক
-                        updated_at: new Date().toISOString() 
-                    })
-                    .eq('category_key', key);
-
+            for (let key in updateMap) {
+                const { error } = await SettingsRepository.updateLaborSetting(key, {
+                    rate_per_unit: updateMap[key].rate_per_unit,
+                    unloading_rate_per_unit: updateMap[key].unloading_rate_per_unit,
+                    updated_at: new Date().toISOString()
+                });
                 if (error) throw error;
             }
-
-            // ইন-অ্যাপ সুন্দর নোটিফিকেশন ফায়ার করা
-            triggerLocalToast("🎉 সব লোডিং ও আনলোডিং রেট সফলভাবে আপডেট হয়েছে!", false);
-
+            triggerLocalToast("🎉 সফলভাবে আপডেট হয়েছে!", false);
         } catch (err) {
-            console.error("সেটিংস সেভ এরর:", err.message);
-            triggerLocalToast("❌ সংরক্ষণ করতে সমস্যা হয়েছে: " + err.message, true);
+            triggerLocalToast("❌ সমস্যা হয়েছে: " + err.message, true);
         } finally {
             btnSave.innerText = "💾 রেট সেটিংস আপডেট করুন";
             btnSave.disabled = false;
