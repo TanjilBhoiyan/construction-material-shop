@@ -1,8 +1,12 @@
 // ==========================================
 // 🛒 1. CART & PRODUCTS STATE MANAGEMENT
 // ==========================================
-//const { supabase } = require('../../config/supabaseClient'); // সেটিংস থেকে ডাটা রিড করার জন্য
 const { BillingRepository } = require('./billing.repository');
+const { BillingService } = require('./billing.service');
+if (window.calculateBillSummary) {
+    window.calculateBillSummary();
+}
+const { showToast } = require('./index');
 
 let cart = [];
 let globalProducts = [];
@@ -32,15 +36,11 @@ function renderCart() {
         cartTbody.appendChild(row);
     });
 
-    // 🎯 আপনার আগের গ্লোবাল ক্যালকুলেশন কল (ঠিক রাখা হলো)
-    const { calculateBillSummary } = require('./calculations');
     calculateBillSummary();
-
-    // ⚙️ লেবার রেট সেটিংস টেবিল থেকে ডাটা এনে অতিরিক্ত খরচের ইনপুট ফিল্ড অটো-আপডেট করা (নন-ব্লকিং)
     calculateAutoLaborCost();
 }
 
-// 🧠 ডেটাবেজের নতুন স্ট্রাকচার (bag, kg, bundle) অনুযায়ী লেবার খরচ হিসাব করার ফিক্সড ফাংশন
+// 🧠 সার্ভিস লেয়ার ব্যবহার করে লেবার খরচ হিসাব করা
 async function calculateAutoLaborCost() {
     const summaryLaborCost = document.getElementById('summary-labor-cost');
     if (!summaryLaborCost) return;
@@ -48,51 +48,23 @@ async function calculateAutoLaborCost() {
     if (cart.length === 0) {
         summaryLaborCost.value = 0;
         summaryLaborCost.dispatchEvent(new Event('input', { bubbles: true }));
-        const { calculateBillSummary } = require('./calculations');
         calculateBillSummary();
         return;
     }
 
     try {
-        // ১. রিপোজিটরি ব্যবহার করে সেটিংস আনা
         const { data: settings, error } = await BillingRepository.getLaborSettings();
         if (error) throw error;
         if (!settings) return;
 
-        const rateMap = {};
-        settings.forEach(s => {
-            rateMap[s.category_key.trim().toLowerCase()] = parseFloat(s.rate_per_unit) || 0;
-        });
-
-        let totalLaborCost = 0;
-
-        // ২. কার্টের হিসাব
-        cart.forEach(item => {
-            const qty = parseFloat(item.quantity) || 0;
-            const rawUnit = (item.unit || '').trim().toLowerCase();
-            let targetKey = 'others';
-
-            if (rawUnit.includes('ব্যাগ') || rawUnit.includes('bag') || rawUnit.includes('bosta')) {
-                targetKey = 'bag';
-            } else if (rawUnit.includes('কেজি') || rawUnit.includes('kg')) {
-                targetKey = 'kg';
-            } else if (rawUnit.includes('বান্ডিল') || rawUnit.includes('bundle')) {
-                targetKey = 'bundle';
-            } else if (rawUnit.includes('পিস') || rawUnit.includes('pcs')) {
-                targetKey = 'pcs';
-            }
-
-            totalLaborCost += qty * (rateMap[targetKey] !== undefined ? rateMap[targetKey] : (rateMap['others'] || 0));
-        });
+        // ক্যালকুলেশন লজিক এখন BillingService এ
+        const totalLaborCost = await BillingService.calculateLaborCost(cart, settings);
 
         summaryLaborCost.value = totalLaborCost.toFixed(2);
         summaryLaborCost.dispatchEvent(new Event('input', { bubbles: true }));
-        
-        const { calculateBillSummary } = require('./calculations');
         calculateBillSummary();
-
     } catch (err) {
-        console.error("লেবার খরচ অটো-ক্যালকুলেট করতে সমস্যা হয়েছে:", err.message);
+        console.error("লেবার খরচ ক্যালকুলেট করতে সমস্যা হয়েছে:", err.message);
     }
 }
 
@@ -113,7 +85,6 @@ function handleAddToCart() {
     const rate = parseFloat(billProdRate ? billProdRate.value : 0) || 0;
 
     if (!prodId || qty <= 0 || rate <= 0) {
-        const { showToast } = require('./index');
         showToast("দয়া করে সঠিক প্রোডাক্ট, পরিমাণ এবং রেট দিন।", true);
         return;
     }

@@ -4,7 +4,7 @@
 const TomSelect = require('tom-select');
 //const { supabase } = require('../../config/supabaseClient');
 const { setGlobalProducts, handleAddToCart } = require('./cart');
-const { calculateBillSummary } = require('./calculations');
+const { calculateBillSummary } = require('./billing.controller');
 const { handleCheckout } = require('./checkout');
 const { BillingRepository } = require('./billing.repository');
 
